@@ -76,6 +76,7 @@ build: $(build_stages)
 ifeq ($(NO_SUDO),1)
 	cp -r ./SPECS/* ./rpmbuild/SPECS/ || true
 	cp -r ./SOURCES/* ./rpmbuild/SOURCES/ || true
+	cp ./SOURCES/examples/* ./rpmbuild/SOURCES/ || true
 	rpmbuild -ba SPECS/haproxy.spec \
 	--define "mainversion ${MAINVERSION}" \
 	--define "version ${VERSION}" \
@@ -90,6 +91,7 @@ ifeq ($(NO_SUDO),1)
 else
 	sudo cp -r ./SPECS/* ./rpmbuild/SPECS/ || true
 	sudo cp -r ./SOURCES/* ./rpmbuild/SOURCES/ || true
+	sudo cp ./SOURCES/examples/* ./rpmbuild/SOURCES/ || true
 	sudo rpmbuild -ba SPECS/haproxy.spec \
 	--define "mainversion ${MAINVERSION}" \
 	--define "version ${VERSION}" \

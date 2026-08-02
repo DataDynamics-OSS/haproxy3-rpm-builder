@@ -21,6 +21,22 @@ Source2: %{name}.service
 Source3: %{name}.logrotate
 Source4: %{name}.syslog%{?dist}
 Source5: halog.1
+
+# 바로 쓸 수 있는 설정 예제. %%prep 에서 recipes/ 로 모아 %%doc 로 패키징합니다.
+Source10: README.txt
+Source11: 01-web-http.cfg
+Source12: 02-https.cfg
+Source13: 03-routing.cfg
+Source14: 04-sticky-session.cfg
+Source15: 05-basic-auth.cfg
+Source16: 06-mysql.cfg
+Source17: 07-postgresql.cfg
+Source18: 08-redis.cfg
+Source19: 09-tcp.cfg
+Source20: 10-rate-limit.cfg
+Source21: 11-maintenance.cfg
+Source22: 12-dynamic-exclusion.cfg
+
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
 
 BuildRequires: pcre-devel
@@ -57,10 +73,24 @@ It needs very little resource. Its event-driven architecture allows it to easily
 handle thousands of simultaneous connections on hundreds of instances without
 risking the system's stability.
 
+Ready-to-use configuration recipes are installed under
+%{_docdir}/%{name}/recipes.
+
 https://github.com/DataDynamics/haproxy3-rpm-builder-internal
 
 %prep
 %setup -q
+
+# Ready-to-use config recipes, shipped as documentation. They are collected
+# here rather than installed straight into %%{_docdir}: the %%doc directive
+# wipes and recreates that directory, which would drop anything %%install put
+# there first.
+%{__mkdir_p} recipes
+for f in %{SOURCE10} %{SOURCE11} %{SOURCE12} %{SOURCE13} %{SOURCE14} \
+         %{SOURCE15} %{SOURCE16} %{SOURCE17} %{SOURCE18} %{SOURCE19} \
+         %{SOURCE20} %{SOURCE21} %{SOURCE22}; do
+    %{__install} -c -m 644 "$f" recipes/
+done
 
 # We don't want any perl dependecies in this RPM:
 %define __perl_requires /bin/true
@@ -171,6 +201,7 @@ systemctl reload-or-try-restart rsyslog.service
 %files
 %defattr(-,root,root)
 %doc CHANGELOG examples/*.cfg doc/configuration.txt doc/intro.txt doc/management.txt doc/proxy-protocol.txt
+%doc recipes
 %if 0%{?el7} || 0%{?amzn2} || 0%{?el8} || 0%{?el9}
     %license LICENSE
 %endif
