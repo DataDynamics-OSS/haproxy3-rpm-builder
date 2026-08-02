@@ -76,7 +76,7 @@ risking the system's stability.
 Ready-to-use configuration recipes are installed under
 %{_docdir}/%{name}/recipes.
 
-https://github.com/DataDynamics/haproxy3-rpm-builder-internal
+https://github.com/DataDynamics-OSS/haproxy3-rpm-builder
 
 %prep
 %setup -q
