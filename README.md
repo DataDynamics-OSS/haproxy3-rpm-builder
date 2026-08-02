@@ -1169,4 +1169,17 @@ ls /usr/share/doc/haproxy/
 
 ## 라이선스
 
-HAProxy는 GPLv2+ 라이선스로 배포됩니다. 자세한 내용은 저장소의 `LICENSE` 파일을 참고하세요.
+라이선스가 **두 가지**로 나뉩니다. 헷갈리기 쉬우니 구분해서 보세요.
+
+| 대상 | 라이선스 |
+|---|---|
+| **이 저장소의 빌드 도구** (spec, Makefile, Dockerfile, 스크립트, 문서) | **GPL v3** — 저장소의 [`LICENSE`](LICENSE) 파일 |
+| **패키징되는 HAProxy 본체** | **GPLv2+** — RPM 의 `License` 필드에 선언된 값 |
+
+이 저장소는 [philyuchkoff/HAProxy-2-RPM-builder](https://github.com/philyuchkoff/HAProxy-2-RPM-builder) 에서 갈라져 나온 파생물이고, 원 저장소가 GPLv3 이므로 이 저장소도 **GPLv3 를 따릅니다.** 포크하거나 수정해서 배포하실 때도 GPLv3 조건이 그대로 적용됩니다.
+
+설치된 패키지의 라이선스는 다음 명령으로 확인할 수 있습니다.
+
+```bash
+rpm -qi haproxy | grep License        # GPLv2+ (HAProxy 본체)
+```
