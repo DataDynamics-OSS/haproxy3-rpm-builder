@@ -2,7 +2,7 @@
 
 이 저장소는 **HAProxy 3.4.3**을 RHEL 계열 리눅스(Rocky Linux, AlmaLinux, CentOS, RHEL)에 바로 설치할 수 있는 **RPM 패키지로 만들어 주는 도구**입니다.
 
-리눅스 배포판이 기본으로 제공하는 HAProxy는 안정성을 위해 보통 몇 년 전 버전에 머물러 있습니다. 예를 들어 Rocky Linux 9의 기본 저장소(AppStream)에는 HAProxy 2.8이 들어 있는데, 이 버전에는 ACME 자동 인증서 발급 같은 3.x 신규 기능이 없습니다. 최신 기능이 필요하다면 직접 소스를 받아 컴파일해야 하지만, 그렇게 설치하면 나중에 삭제나 업그레이드가 지저분해집니다.
+리눅스 배포판이 기본으로 제공하는 HAProxy는 안정성을 위해 보통 몇 년 전 버전에 머물러 있어서, ACME 자동 인증서 발급 같은 3.x 신규 기능을 쓸 수 없습니다. 최신 기능이 필요하다면 직접 소스를 받아 컴파일해야 하지만, 그렇게 설치하면 나중에 삭제나 업그레이드가 지저분해집니다.
 
 이 저장소는 그 중간을 메웁니다. 최신 HAProxy 소스를 받아서 컴파일하되, 결과물을 **RPM 패키지로 포장**해 줍니다. 그래서 `dnf install`로 설치하고 `dnf remove`로 깔끔하게 지울 수 있으며, systemd 서비스 등록·로그 설정·로그 로테이션까지 모두 자동으로 잡힙니다.
 
@@ -406,7 +406,24 @@ sudo haproxy -c -f /etc/haproxy/haproxy.cfg && sudo systemctl reload haproxy
 
 실무에서 자주 쓰는 설정을 용도별로 모았습니다. **필요한 것만 골라서** `/etc/haproxy/haproxy.cfg` 끝에 붙여 넣고, IP 주소와 포트만 환경에 맞게 바꾸면 됩니다.
 
-> 이 문서의 모든 예제는 HAProxy 3.4.3에서 문법 검사(`haproxy -c`)를 **경고 없이** 통과하는 것을 확인했습니다. 웹·라우팅·세션 고정·HTTPS·TCP·속도 제한 예제는 실제 백엔드를 붙여 동작까지 검증했습니다.
+> 이 문서의 모든 예제는 HAProxy 3.4.3에서 문법 검사(`haproxy -c`)를 **경고 없이** 통과하는 것을 확인했습니다. 웹·라우팅·세션 고정·HTTPS·TCP·속도 제한·기본 인증·동적 제외 예제는 실제로 띄워 동작까지 검증했습니다.
+
+### 예제는 패키지에도 들어 있습니다
+
+이 문서를 찾아보지 않아도 되도록, **아래 예제를 파일로도 함께 설치**합니다. 패키지를 깔면 서버에서 바로 꺼내 쓸 수 있습니다.
+
+```bash
+ls /usr/share/doc/haproxy/recipes/
+cat /usr/share/doc/haproxy/recipes/README.txt
+```
+
+각 파일은 `global`이나 `defaults` 없이 프록시 정의만 담은 **조각**입니다. 그래서 지금 쓰는 설정과 합쳐서 미리 시험해 볼 수 있습니다. `-f`를 여러 번 주면 HAProxy가 설정을 합쳐 검사합니다.
+
+```bash
+haproxy -c -f /etc/haproxy/haproxy.cfg -f /usr/share/doc/haproxy/recipes/01-web-http.cfg
+```
+
+붙여 넣기 전에 이렇게 확인해 보면, 기존 설정과 이름이 겹치거나 문법이 틀린 것을 미리 잡을 수 있습니다.
 
 ### 예제를 적용하는 공통 절차
 
@@ -794,6 +811,144 @@ echo "show servers state" | sudo socat stdio /run/haproxy/haproxy.sock
 ```
 
 이 방식은 HAProxy를 재시작하지 않으므로 다른 서버의 연결에 전혀 영향을 주지 않습니다. [통계 페이지](#통계stats-페이지)에서 `stats admin`을 켜 두었다면 브라우저 버튼으로도 같은 일을 할 수 있습니다.
+
+---
+
+### 11. HTTP 기본 인증 (Basic Auth)
+
+브라우저 기본 로그인 창으로 접근을 제한합니다. 관리 페이지나 사내 도구처럼 간단한 보호만 필요한 곳에 쓰기 좋습니다.
+
+```
+userlist site_users
+  user admin  password $6$rounds=5000$saltsalt$해시값을_여기에_붙여넣으세요
+
+frontend web
+  bind :80
+  acl auth_ok http_auth(site_users)
+  http-request auth realm "Restricted Area" unless auth_ok
+  default_backend web_servers
+
+backend web_servers
+  balance roundrobin
+  server web1 10.0.0.11:8080 check
+```
+
+`userlist`에 계정을 정의하고, `http_auth(site_users)`로 "이 요청의 자격 증명이 목록과 맞는가"를 확인합니다. 맞지 않으면(`unless auth_ok`) `http-request auth`가 401을 돌려주고, 브라우저는 로그인 창을 띄웁니다.
+
+**비밀번호는 해시로 저장하세요.** 해시는 아래 명령으로 만듭니다.
+
+```bash
+openssl passwd -6 '실제비밀번호'
+```
+
+`-6`은 SHA-512를 뜻하며, 출력된 문자열을 `password` 뒤에 그대로 붙여 넣으면 됩니다. 시험용으로 평문을 쓰려면 `password` 대신 `insecure-password`를 씁니다. 이름 그대로 안전하지 않은 방식이라, 설정 파일을 읽을 수 있는 사람에게 비밀번호가 그대로 노출됩니다.
+
+특정 경로에만 인증을 걸 수도 있습니다.
+
+```
+userlist site_users
+  user admin  password $6$rounds=5000$saltsalt$해시값을_여기에_붙여넣으세요
+
+frontend web
+  bind :80
+  acl is_admin_path path_beg /admin
+  acl auth_ok       http_auth(site_users)
+  http-request auth realm "Admin Only" if is_admin_path !auth_ok
+  default_backend web_servers
+
+backend web_servers
+  balance roundrobin
+  server web1 10.0.0.11:8080 check
+```
+
+> ⚠️ Basic Auth는 자격 증명을 **매 요청마다 그대로 실어 보냅니다.** HTTP로 쓰면 네트워크에서 그대로 읽힙니다. 반드시 [HTTPS](#3-https-처리-ssl-종료)와 함께 쓰세요. 또한 계정이 설정 파일에 박히므로 사용자가 여러 명이거나 자주 바뀌는 서비스에는 맞지 않습니다. 그런 경우에는 애플리케이션 단의 인증이나 OAuth 프록시를 쓰세요.
+
+---
+
+### 12. 외부 정보로 서버를 동적으로 제외하기
+
+헬스체크는 "서버가 응답하는가"만 봅니다. 하지만 실제로는 **응답은 하는데 빼야 하는** 경우가 많습니다. 배포가 진행 중이거나, 디스크가 찼거나, 애플리케이션이 자기 상태를 이미 알고 있는 경우입니다. 이럴 때 쓰는 세 가지 방법이 있습니다.
+
+#### 방법 1 — agent-check: 서버가 스스로 상태를 보고
+
+각 서버에 작은 에이전트를 띄워 두면 HAProxy가 주기적으로 접속해 한 줄을 읽어 갑니다. **애플리케이션이 자기 상태를 가장 잘 알기 때문에 가장 정확한 방법**입니다.
+
+```
+backend web_servers
+  balance roundrobin
+  server web1 10.0.0.11:8080 check agent-check agent-addr 10.0.0.11 agent-port 9999 agent-inter 5s
+  server web2 10.0.0.12:8080 check agent-check agent-addr 10.0.0.12 agent-port 9999 agent-inter 5s
+```
+
+> `server` 줄은 반드시 **한 줄**로 써야 합니다. 다른 설정 파일과 달리 HAProxy는 역슬래시(`\`)를 이용한 줄바꿈을 지원하지 않습니다.
+
+에이전트가 돌려줄 수 있는 값은 다음과 같습니다.
+
+| 응답 | 의미 |
+|---|---|
+| `up` / `down` | 정상 / 제외 |
+| `maint` | 점검 상태로 전환 |
+| `drain` | 새 연결만 차단하고 기존 연결은 유지 |
+| `ready` | 정상 복귀 |
+| `75%` | 가중치를 원래의 75%로 조정 |
+
+서버 쪽에는 이런 식으로 띄워 둡니다. 아래는 부하가 높으면 스스로 트래픽에서 빠지는 예입니다.
+
+```bash
+while true; do
+  if [ $(cut -d. -f1 /proc/loadavg) -gt 10 ]; then echo "drain"; else echo "up"; fi
+done | socat TCP-LISTEN:9999,reuseaddr,fork -
+```
+
+#### 방법 2 — Runtime API: 외부 시스템이 소켓으로 제외
+
+배포 스크립트나 모니터링 도구가 관리 소켓으로 명령을 보내는 방식입니다. 설정 변경도 재시작도 필요 없고 즉시 반영됩니다. **배포 파이프라인에 넣기 가장 쉬운 방법**입니다.
+
+```bash
+# 배포 전 — 트래픽 빼기 (기존 연결은 정상 종료될 때까지 유지)
+echo "set server web_servers/web1 state drain" | sudo socat stdio /run/haproxy/haproxy.sock
+
+# 배포 후 — 복귀
+echo "set server web_servers/web1 state ready" | sudo socat stdio /run/haproxy/haproxy.sock
+
+# 가중치만 낮춰 트래픽을 조금씩 옮기기 (카나리 배포)
+echo "set server web_servers/web1 weight 10" | sudo socat stdio /run/haproxy/haproxy.sock
+```
+
+#### 방법 3 — 맵 파일: 요청 단위로 동적 차단
+
+서버가 아니라 **요청**을 걸러 내는 경우입니다. 차단 목록을 파일로 두고 런타임에 갱신하면 리로드 없이 즉시 반영됩니다.
+
+```
+frontend web
+  bind :80
+  acl is_blocked src,map_ip(/etc/haproxy/blocked.map) -m found
+  http-request deny deny_status 403 if is_blocked
+  default_backend web_servers
+
+backend web_servers
+  balance roundrobin
+  server web1 10.0.0.11:8080 check
+  server web2 10.0.0.12:8080 check
+```
+
+빈 파일이라도 미리 만들어 두어야 기동됩니다.
+
+```bash
+sudo touch /etc/haproxy/blocked.map
+```
+
+이후 목록 갱신은 소켓으로 합니다.
+
+```bash
+echo "add map /etc/haproxy/blocked.map 1.2.3.4 blocked" | sudo socat stdio /run/haproxy/haproxy.sock
+echo "del map /etc/haproxy/blocked.map 1.2.3.4"         | sudo socat stdio /run/haproxy/haproxy.sock
+echo "show map /etc/haproxy/blocked.map"                | sudo socat stdio /run/haproxy/haproxy.sock
+```
+
+> 런타임 갱신은 **메모리에만** 반영됩니다. HAProxy를 재시작하면 사라지므로, 영구히 유지하려면 파일에도 함께 기록해 두세요.
+
+세 방법은 성격이 다릅니다. 서버의 상태를 서버 자신이 판단하게 하려면 **1번**, 배포 도구처럼 외부에서 통제하려면 **2번**, 서버가 아니라 특정 접속자를 막으려면 **3번**을 쓰면 됩니다.
 
 ---
 
