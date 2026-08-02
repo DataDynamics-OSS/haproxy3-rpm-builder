@@ -87,7 +87,8 @@ run-docker: $(addprefix run-docker-el,$(EL_VERSIONS))
 run-docker-el%: build-docker-el%
 	mkdir -p RPMS/el$*
 	@echo "==> building for EL$* on $(BASE_IMAGE_$*)"
-	docker run -e USE_LUA=${USE_LUA} -e USE_PROMETHEUS=${USE_PROMETHEUS} -e RELEASE=${RELEASE} \
+	docker run -e VERSION=${VERSION} -e MAINVERSION=${MAINVERSION} \
+	           -e USE_LUA=${USE_LUA} -e USE_PROMETHEUS=${USE_PROMETHEUS} -e RELEASE=${RELEASE} \
 	           --volume $(HOME)/RPMS/el$*:/RPMS --rm haproxy-rpm-builder:el$*
 
 build: $(build_stages)
