@@ -10,6 +10,15 @@ ifeq ("${VERSION}","./")
 endif
 RELEASE=1
 
+# Supported EL targets. Override to build a subset, e.g.
+#   make run-docker EL_VERSIONS=9
+EL_VERSIONS?=8 9
+
+# Base image per target. Override to use AlmaLinux, UBI, a mirror, etc:
+#   make run-docker BASE_IMAGE_9=almalinux:9
+BASE_IMAGE_8?=rockylinux:8
+BASE_IMAGE_9?=rockylinux:9
+
 all: build
 
 install_prereq:
@@ -61,16 +70,25 @@ ifeq ($(USE_LUA),1)
 	build_stages += build_lua
 endif
 
-build-docker:
-	docker build -t haproxy-rpm-builder:latest -f Dockerfile .
+# --- Docker builds -------------------------------------------------------
+# One image and one output directory per EL target. RPMs land in
+# RPMS/el8/ and RPMS/el9/ so the two builds never overwrite each other.
 
-run-docker: build-docker
-	mkdir -p RPMS
-ifeq ($(USE_LUA),1)
-	docker run -e USE_LUA=${USE_LUA} -e USE_PROMETHEUS=${USE_PROMETHEUS} -e RELEASE=${RELEASE} --volume $(HOME)/RPMS:/RPMS --rm haproxy-rpm-builder:latest
-else
-	docker run -e USE_PROMETHEUS=${USE_PROMETHEUS} -e RELEASE=${RELEASE} --volume $(HOME)/RPMS:/RPMS --rm haproxy-rpm-builder:latest
-endif
+build-docker: $(addprefix build-docker-el,$(EL_VERSIONS))
+
+build-docker-el%:
+	docker build --build-arg BASE_IMAGE=$(BASE_IMAGE_$*) \
+	             -t haproxy-rpm-builder:el$* -f Dockerfile .
+
+run-docker: $(addprefix run-docker-el,$(EL_VERSIONS))
+	@echo "==> built for EL: $(EL_VERSIONS)"
+	@ls -1 RPMS/el*/*.rpm 2>/dev/null || true
+
+run-docker-el%: build-docker-el%
+	mkdir -p RPMS/el$*
+	@echo "==> building for EL$* on $(BASE_IMAGE_$*)"
+	docker run -e USE_LUA=${USE_LUA} -e USE_PROMETHEUS=${USE_PROMETHEUS} -e RELEASE=${RELEASE} \
+	           --volume $(HOME)/RPMS/el$*:/RPMS --rm haproxy-rpm-builder:el$*
 
 build: $(build_stages)
 ifeq ($(NO_SUDO),1)
