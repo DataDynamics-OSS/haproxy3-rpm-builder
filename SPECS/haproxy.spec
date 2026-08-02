@@ -2,8 +2,10 @@
 %define haproxy_group   %{haproxy_user}
 %define haproxy_home    %{_localstatedir}/lib/haproxy
 
-%if 0%{?rhel} > 6 && 0%{!?amzn2}
-    %define dist %{expand:%%(/usr/lib/rpm/redhat/dist.sh --dist)}
+# This package targets RHEL 8 and 9 (and rebuilds such as Rocky/Alma) only.
+# Fail early and clearly rather than producing a subtly wrong package.
+%if !(0%{?el8} || 0%{?el9})
+%{error:haproxy: unsupported build target (dist=%{?dist}). RHEL 8 or 9 required.}
 %endif
 
 %global _hardened_build 1
@@ -49,13 +51,11 @@ Requires(pre):      shadow-utils
 Requires:           rsyslog
 
 
-%if 0%{?el7} || 0%{?amzn2} || 0%{?el8} || 0%{?el9}
 BuildRequires:      systemd-units
 BuildRequires:      systemd-devel
 Requires(post):     systemd
 Requires(preun):    systemd
 Requires(postun):   systemd
-%endif
 
 %description
 HA-Proxy is a TCP/HTTP reverse proxy which is particularly suited for high
@@ -109,15 +109,11 @@ pcre_opts="USE_PCRE=1"
 USE_TFO=
 USE_NS=
 
-%if 0%{?el7} || 0%{?amzn2} || 0%{?el8} || 0%{?el9}
 systemd_opts="USE_SYSTEMD=1"
 pcre_opts="USE_PCRE=1 USE_PCRE_JIT=1"
-%endif
 
-%if 0%{?el7} || 0%{?amzn2} || 0%{?el8} || 0%{?el9}
 USE_TFO=1
 USE_NS=1
-%endif
 
 %if 0%{_use_lua}
 SET_LUA="USE_LUA=1"
@@ -162,10 +158,8 @@ popd
 %{__install} -p -D -m 0644 %{SOURCE5} %{buildroot}%{_mandir}/man1/halog.1
 
 
-%if 0%{?el7} || 0%{?amzn2} || 0%{?el8} || 0%{?el9}
 %{__install} -s %{name} %{buildroot}%{_sbindir}/
 %{__install} -p -D -m 0644 %{SOURCE2} %{buildroot}%{_unitdir}/%{name}.service
-%endif
 
 %clean
 [ "%{buildroot}" != "/" ] && %{__rm} -rf %{buildroot}
@@ -179,32 +173,24 @@ getent passwd %{haproxy_user} >/dev/null || \
 exit 0
 
 %post
-%if 0%{?el7} || 0%{?amzn2} || 0%{?el8} || 0%{?el9}
 %systemd_post %{name}.service
 systemctl reload-or-try-restart rsyslog.service
-%endif
 
 
 %preun
-%if 0%{?el7} || 0%{?amzn2} || 0%{?el8} || 0%{?el9}
 %systemd_preun %{name}.service
-%endif
 
 
 %postun
-%if 0%{?el7} || 0%{?amzn2} || 0%{?el8} || 0%{?el9}
 %systemd_postun_with_restart %{name}.service
 systemctl reload-or-try-restart rsyslog.service
-%endif
 
 
 %files
 %defattr(-,root,root)
 %doc CHANGELOG examples/*.cfg doc/configuration.txt doc/intro.txt doc/management.txt doc/proxy-protocol.txt
 %doc recipes
-%if 0%{?el7} || 0%{?amzn2} || 0%{?el8} || 0%{?el9}
     %license LICENSE
-%endif
 %doc %{_mandir}/man1/*
 %dir %{_sysconfdir}/%{name}
 %{_sysconfdir}/%{name}/errors
@@ -218,6 +204,4 @@ systemctl reload-or-try-restart rsyslog.service
 %{_bindir}/iprange
 
 
-%if 0%{?el7} || 0%{?amzn2} || 0%{?el8} || 0%{?el9}
 %attr(-,root,root) %{_unitdir}/%{name}.service
-%endif
