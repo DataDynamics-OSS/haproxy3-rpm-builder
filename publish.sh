@@ -106,7 +106,9 @@ fi
 # --- 릴리스 미러링 --------------------------------------------------------
 if [ "$WITH_RELEASES" = 1 ]; then
     say "릴리스 미러링"
-    TAGS=$(gh release list --repo "$INTERNAL_SLUG" --json tagName --jq '.[].tagName' | sort -V)
+    # isLatest 는 release list 에서만 제공되므로 여기서 함께 읽어 둡니다.
+    LIST=$(gh release list --repo "$INTERNAL_SLUG" --json tagName,isLatest)
+    TAGS=$(jq -r '.[].tagName' <<<"$LIST" | sort -V)
     [ -z "$TAGS" ] && echo "    내부 저장소에 릴리스가 없습니다."
 
     for tag in $TAGS; do
@@ -114,9 +116,9 @@ if [ "$WITH_RELEASES" = 1 ]; then
             echo "    $tag 이미 존재 — 건너뜀"
             continue
         fi
-        meta=$(gh release view "$tag" --repo "$INTERNAL_SLUG" --json name,body,isLatest)
+        meta=$(gh release view "$tag" --repo "$INTERNAL_SLUG" --json name,body)
         title=$(jq -r .name <<<"$meta")
-        latest=$(jq -r .isLatest <<<"$meta")
+        latest=$(jq -r --arg t "$tag" '.[] | select(.tagName==$t) | .isLatest' <<<"$LIST")
         assets=$(mktemp -d)
 
         jq -r .body <<<"$meta" \
