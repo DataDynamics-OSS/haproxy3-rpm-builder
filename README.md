@@ -1,6 +1,6 @@
 # HAProxy 3 RPM 빌더
 
-이 저장소는 **HAProxy 3.4.3**을 RHEL 계열 리눅스(Rocky Linux, AlmaLinux, CentOS, RHEL)에 바로 설치할 수 있는 **RPM 패키지로 만들어 주는 도구**입니다.
+이 저장소는 **HAProxy 3.4.3**을 **RHEL 8 / RHEL 9**(및 Rocky Linux, AlmaLinux 같은 호환 배포판)에 바로 설치할 수 있는 **RPM 패키지로 만들어 주는 도구**입니다. 두 버전용 패키지를 한 번에 만들어 줍니다.
 
 리눅스 배포판이 기본으로 제공하는 HAProxy는 안정성을 위해 보통 몇 년 전 버전에 머물러 있어서, ACME 자동 인증서 발급 같은 3.x 신규 기능을 쓸 수 없습니다. 최신 기능이 필요하다면 직접 소스를 받아 컴파일해야 하지만, 그렇게 설치하면 나중에 삭제나 업그레이드가 지저분해집니다.
 
@@ -39,10 +39,18 @@ cd haproxy3-rpm-builder-internal
 make run-docker
 ```
 
-몇 분 뒤 `RPMS/` 디렉터리에 RPM 파일이 생깁니다. 이걸 대상 서버로 옮겨서 설치하면 됩니다.
+몇 분 뒤 RPM 파일이 **OS 버전별로 나뉘어** 생깁니다.
+
+```
+RPMS/
+├── el8/    ← RHEL 8 / Rocky 8 / Alma 8 용
+└── el9/    ← RHEL 9 / Rocky 9 / Alma 9 용
+```
+
+대상 서버의 버전에 맞는 것을 옮겨서 설치하면 됩니다.
 
 ```bash
-sudo dnf install -y ./RPMS/haproxy-3.4.3-1.el9.x86_64.rpm
+sudo dnf install -y ./RPMS/el9/haproxy-3.4.3-1.el9.x86_64.rpm
 sudo systemctl enable --now haproxy
 ```
 
@@ -52,16 +60,27 @@ sudo systemctl enable --now haproxy
 
 ## 무엇이 만들어지나요
 
-빌드가 끝나면 RPM 파일 네 개가 생깁니다. 보통은 **첫 번째 것만 설치하면 됩니다.**
+빌드가 끝나면 **OS 버전별로** RPM 파일 네 개씩 생깁니다. 보통은 **첫 번째 것만 설치하면 됩니다.**
 
 | 파일 | 크기 | 설명 |
 |---|---|---|
 | `haproxy-3.4.3-1.el9.x86_64.rpm` | 약 2.4 MB | **실제로 설치할 패키지.** HAProxy 본체와 설정 파일이 들어 있습니다. |
-| `haproxy-3.4.3-1.el9.src.rpm` | 약 5.2 MB | 소스 RPM. 다른 곳에서 이 패키지를 그대로 재현해 빌드할 때 씁니다. |
+| `haproxy-3.4.3-1.el9.src.rpm` | 약 5.3 MB | 소스 RPM. 다른 곳에서 이 패키지를 그대로 재현해 빌드할 때 씁니다. |
 | `haproxy-debuginfo-…rpm` | 약 48 KB | 디버깅 심볼. 장애 분석으로 코어 덤프를 뜯어볼 때만 필요합니다. |
 | `haproxy-debugsource-…rpm` | 약 43 KB | 디버깅용 소스. 위와 같은 용도입니다. |
 
-파일 이름의 `1`은 패키지 릴리스 번호이고 `el9`는 RHEL 9 계열용이라는 뜻입니다. Rocky Linux 9, AlmaLinux 9, RHEL 9에 설치할 수 있습니다.
+파일 이름의 `1`은 패키지 릴리스 번호이고, **`el8`/`el9`가 어느 OS용인지 나타냅니다.** `el8`은 RHEL 8·Rocky 8·AlmaLinux 8에, `el9`는 RHEL 9·Rocky 9·AlmaLinux 9에 설치합니다.
+
+> **버전을 맞춰서 설치하세요.** RHEL 8 서버에 `el9` 패키지를 넣으면 라이브러리 버전이 맞지 않아 설치가 거부되거나 실행되지 않습니다. 서버 버전은 `cat /etc/redhat-release`로 확인할 수 있습니다.
+
+두 패키지는 같은 소스에서 만들어지지만 그 OS가 제공하는 라이브러리에 맞춰 빌드되므로 내용이 다릅니다. 대표적으로 **SSL 라이브러리**가 다릅니다.
+
+| | RHEL 8 | RHEL 9 |
+|---|---|---|
+| 컴파일러 | GCC 8.5 | GCC 11 이상 |
+| OpenSSL | 1.1.1 | 3.x |
+
+OpenSSL 1.1.1은 3.x보다 성능이 좋은 것으로 알려져 있어서, 트래픽이 많다면 RHEL 8 쪽이 유리할 수 있습니다.
 
 ### 설치되는 파일들
 
@@ -99,9 +118,9 @@ Lua 스크립트와 Prometheus 지표는 기본으로 꺼져 있고, 필요하�
 
 빌드 방법은 두 가지이고, 둘 중 **하나만** 고르면 됩니다.
 
-**Docker 방식**을 권장합니다. 빌드에 필요한 컴파일러와 라이브러리가 전부 컨테이너 안에서만 설치되고 끝나기 때문에, 여러분의 서버는 조금도 더러워지지 않습니다. 또 어느 컴퓨터에서 돌리든 항상 Rocky Linux 9 환경에서 빌드되므로 결과물이 늘 똑같습니다. 노트북(맥이든 윈도우든 리눅스든)에서 빌드해서 RPM만 서버로 옮기는 것도 가능합니다.
+**Docker 방식**을 권장합니다. 빌드에 필요한 컴파일러와 라이브러리가 전부 컨테이너 안에서만 설치되고 끝나기 때문에, 여러분의 서버는 조금도 더러워지지 않습니다. 무엇보다 **RHEL 8용과 RHEL 9용을 한 번에** 만들 수 있습니다. RHEL 8 패키지는 RHEL 8 환경에서 빌드해야 하는데, Docker를 쓰면 RHEL 8 서버를 따로 준비하지 않아도 됩니다. 노트북(맥이든 윈도우든 리눅스든)에서 빌드해서 RPM만 서버로 옮기는 것도 가능합니다.
 
-**직접 빌드 방식**은 Docker를 쓸 수 없는 환경일 때 선택합니다. 이 경우 빌드하는 서버 자체가 RHEL 9 계열이어야 하고, 개발 도구 수십 개가 그 서버에 설치됩니다. 운영 서버에서는 권장하지 않습니다.
+**직접 빌드 방식**은 Docker를 쓸 수 없는 환경일 때 선택합니다. 이 경우 **빌드하는 서버와 같은 버전의 패키지만** 만들 수 있습니다. RHEL 9 서버에서 빌드하면 `el9` 패키지만 나옵니다. 개발 도구 수십 개가 그 서버에 설치되므로 운영 서버에서는 권장하지 않습니다.
 
 두 방식 모두 빌드 도중 `haproxy.org`에서 소스 코드를 내려받으므로 **인터넷 연결이 필요합니다.**
 
@@ -123,21 +142,47 @@ cd haproxy3-rpm-builder-internal
 make run-docker
 ```
 
-이 한 줄이 실제로는 세 가지 일을 순서대로 합니다. 먼저 Rocky Linux 9 기반으로 컴파일러가 들어 있는 빌더 이미지를 만들고, 그 컨테이너 안에서 HAProxy 소스를 받아 컴파일한 뒤, 완성된 RPM을 여러분 컴퓨터의 `RPMS/` 디렉터리로 복사해 줍니다.
+이 한 줄이 **RHEL 8용과 RHEL 9용을 차례로** 만들어 줍니다. 각 버전마다 해당 OS의 컨테이너를 띄우고, 그 안에서 HAProxy 소스를 받아 컴파일한 뒤, 완성된 RPM을 `RPMS/el8/`과 `RPMS/el9/`로 복사합니다.
 
-처음 실행하면 Rocky Linux 이미지를 내려받고 개발 도구를 설치하느라 **5~10분쯤** 걸립니다. 두 번째부터는 이미지가 캐시되어 훨씬 빠릅니다.
+처음 실행하면 이미지 두 개를 내려받고 개발 도구를 설치하느라 **10~20분쯤** 걸립니다. 두 번째부터는 이미지가 캐시되어 훨씬 빠릅니다.
 
 끝나면 결과를 확인합니다.
 
 ```bash
-ls -lh RPMS/
+ls -lh RPMS/el8/ RPMS/el9/
 ```
+
+### 한쪽만 빌드하기
+
+RHEL 9만 쓴다면 굳이 둘 다 만들 필요가 없습니다. `EL_VERSIONS`로 원하는 것만 고르세요.
+
+```bash
+make run-docker EL_VERSIONS=9      # RHEL 9 용만
+make run-docker EL_VERSIONS=8      # RHEL 8 용만
+make run-docker EL_VERSIONS="8 9"  # 둘 다 (기본값)
+```
+
+### 베이스 이미지 바꾸기
+
+기본값은 Rocky Linux입니다. AlmaLinux나 사내 미러를 쓰려면 이렇게 바꿉니다.
+
+```bash
+make run-docker BASE_IMAGE_8=almalinux:8 BASE_IMAGE_9=almalinux:9
+```
+
+> Dockerfile은 **하나**입니다. EL8과 EL9의 설치 패키지 목록이 완전히 같아서, 파일을 복제하는 대신 `BASE_IMAGE` 인자로 베이스만 바꿉니다. 나중에 EL10을 추가할 때도 Makefile에 한 줄만 더하면 됩니다.
 
 ---
 
 ## 방법 2 — 서버에서 직접 빌드하기
 
-이 방법은 **RHEL 9 계열 서버에서만** 동작합니다. 먼저 빌드에 필요한 도구를 설치합니다.
+이 방법은 **RHEL 8 또는 RHEL 9 서버에서** 동작하며, **그 서버와 같은 버전의 패키지만** 만들어 냅니다. RHEL 8 서버에서 빌드하면 `el8` 패키지가, RHEL 9에서 빌드하면 `el9` 패키지가 나옵니다. 지원하지 않는 배포판(Fedora, Ubuntu 등)에서 실행하면 아래처럼 즉시 중단됩니다.
+
+```
+error: haproxy: unsupported build target (dist=.fc44). RHEL 8 or 9 required.
+```
+
+먼저 빌드에 필요한 도구를 설치합니다.
 
 ```bash
 sudo dnf groupinstall -y "Development Tools"
@@ -172,6 +217,9 @@ ls -lh rpmbuild/RPMS/x86_64/
 | `MAINVERSION` | `3.4` | HAProxy 계열 버전. 다운로드 경로를 결정합니다. |
 | `VERSION` | `3.4.3` | 정확한 HAProxy 버전 |
 | `RELEASE` | `1` | 패키지 릴리스 번호. 같은 HAProxy 버전으로 패키지를 다시 만들 때 올립니다. |
+| `EL_VERSIONS` | `8 9` | 어느 OS 버전용으로 빌드할지 (Docker 방식 전용) |
+| `BASE_IMAGE_8` | `rockylinux:8` | RHEL 8 빌드에 쓸 컨테이너 이미지 |
+| `BASE_IMAGE_9` | `rockylinux:9` | RHEL 9 빌드에 쓸 컨테이너 이미지 |
 | `USE_LUA` | `0` | Lua 스크립트 지원 |
 | `USE_PROMETHEUS` | `0` | Prometheus 지표 노출 기능 |
 | `NO_SUDO` | `1` | `1`이면 sudo 없이, `0`이면 각 명령에 sudo를 붙여 실행 |
@@ -210,10 +258,11 @@ make run-docker USE_LUA=1 USE_PROMETHEUS=1
 
 ## 설치하고 실행하기
 
-만들어진 RPM을 대상 서버로 옮긴 뒤 설치합니다.
+만들어진 RPM을 대상 서버로 옮긴 뒤 설치합니다. **서버 버전에 맞는 파일**을 골라야 합니다.
 
 ```bash
-sudo dnf install -y ./haproxy-3.4.3-1.el9.x86_64.rpm
+cat /etc/redhat-release                                   # 서버가 8인지 9인지 확인
+sudo dnf install -y ./haproxy-3.4.3-1.el9.x86_64.rpm      # el9 서버라면
 ```
 
 `dnf`는 필요한 라이브러리(OpenSSL, zlib, PCRE, rsyslog)를 알아서 함께 설치해 줍니다. 설치가 잘 됐는지 버전을 확인해 봅니다.
@@ -1008,7 +1057,7 @@ VERSION=3.4.3         # 정확한 버전 (세 자리)
 
 ```bash
 make run-docker
-ls -lh RPMS/
+ls -lh RPMS/el8/ RPMS/el9/
 ```
 
 **4단계 — 검증.** 운영에 올리기 전에 테스트 환경에서 설치해 보고, 버전과 기능이 의도대로 나오는지 확인하세요.
@@ -1082,6 +1131,8 @@ sudo semanage port -a -t http_port_t -p tcp 9000
 ```bash
 sudo dnf install -y ./haproxy-3.4.3-1.el9.x86_64.rpm
 ```
+
+그래도 의존성 오류가 난다면 **패키지 버전이 서버와 안 맞는 경우**입니다. RHEL 8 서버에 `el9` 패키지를 넣으면 OpenSSL 버전이 달라 설치가 거부됩니다. `cat /etc/redhat-release`로 서버 버전을 확인하고 맞는 파일을 쓰세요.
 
 ### 빌드 도중 다운로드에 실패해요
 
