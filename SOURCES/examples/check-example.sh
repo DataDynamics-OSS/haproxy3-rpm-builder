@@ -6,6 +6,9 @@
 # 없습니다. 이 스크립트가 같은 디렉터리의 00-base.cfg(global/defaults 뼈대)를
 # 앞에 붙여서 haproxy -c 를 돌려 줍니다.
 #
+# 예제와 이름이 같은 .global 파일이 옆에 있으면 00-base.cfg 대신 그것을 씁니다.
+# global 섹션에 뭔가를 더 켜야만 검사가 되는 예제를 위한 장치입니다.
+#
 # 사용법:
 #   check-example.sh 01-web-http-lb.cfg    예제 하나 검사
 #   check-example.sh --all                 모든 예제 검사
@@ -45,11 +48,19 @@ check_one() {
 
     echo "== $(basename "$target")"
 
+    # 예제 전용 뼈대가 있으면 그것을, 없으면 공용 00-base.cfg 를 쓴다.
+    local skeleton="${target%.cfg}.global"
+    if [ -f "$skeleton" ]; then
+        echo "   (전용 뼈대 사용: $(basename "$skeleton"))"
+    else
+        skeleton="$BASE"
+    fi
+
     # HAProxy 3.x는 문제가 없으면 아무 말도 하지 않습니다. 그대로 두면 통과인지
     # 아직 안 돌았는지 구분이 안 되므로, 출력을 받아 두었다가 결과를 직접 알려
     # 줍니다. 경고는 종료 코드 0이라 따로 찾아내야 합니다.
     local out rc
-    out="$("$HAPROXY" -c -f "$BASE" -f "$target" 2>&1)"
+    out="$("$HAPROXY" -c -f "$skeleton" -f "$target" 2>&1)"
     rc=$?
 
     [ -n "$out" ] && echo "$out"

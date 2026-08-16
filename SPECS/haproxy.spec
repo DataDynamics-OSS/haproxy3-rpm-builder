@@ -49,6 +49,11 @@ Source30: 10-redis.cfg
 Source31: 11-tcp-passthrough.cfg
 Source32: 12-rate-limit.cfg
 Source33: 13-maintenance.cfg
+Source34: 14-agent-check.cfg
+Source35: 15-external-check.cfg
+# Skeleton for checking Source35: it needs global.external-check, which the
+# shared 00-base.cfg deliberately does not enable.
+Source36: 15-external-check.global
 
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
 
@@ -175,6 +180,9 @@ popd
 %{__install} -c -m 644 %{SOURCE31} %{example_dir}/11-tcp-passthrough.cfg
 %{__install} -c -m 644 %{SOURCE32} %{example_dir}/12-rate-limit.cfg
 %{__install} -c -m 644 %{SOURCE33} %{example_dir}/13-maintenance.cfg
+%{__install} -c -m 644 %{SOURCE34} %{example_dir}/14-agent-check.cfg
+%{__install} -c -m 644 %{SOURCE35} %{example_dir}/15-external-check.cfg
+%{__install} -c -m 644 %{SOURCE36} %{example_dir}/15-external-check.global
 
 %{__install} -p -m 0755 ./admin/halog/halog %{buildroot}%{_bindir}/halog
 %{__install} -p -m 0755 ./admin/iprange/iprange %{buildroot}%{_bindir}/iprange

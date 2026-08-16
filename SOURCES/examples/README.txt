@@ -14,6 +14,7 @@
 ------------------------------------------------------------------------------
 
   00-base.cfg               문법 검사용 global/defaults 뼈대 (붙여 넣는 예제 아님)
+  15-external-check.global  15번 예제 전용 뼈대 (붙여 넣는 예제 아님)
 
   01-web-http-lb.cfg        웹 서버 부하 분산 (HTTP) — 가장 기본
   02-real-client-ip.cfg     백엔드에 진짜 접속자 IP 알려주기 (X-Forwarded-For)
@@ -28,6 +29,8 @@
   11-tcp-passthrough.cfg    일반 TCP 서비스 중계 (SMTP 등)
   12-rate-limit.cfg         접속 제한과 속도 제한
   13-maintenance.cfg        서버 점검(maintenance) 처리
+  14-agent-check.cfg        외부 에이전트로 상태·가중치 동적 제어 (권장)
+  15-external-check.cfg     외부 스크립트를 실행해 헬스체크 (chroot 꺼야 함)
 
   check-example.sh          예제 하나를 문법 검사해 주는 도우미 스크립트
 
@@ -68,6 +71,10 @@
 
 03번과 04번은 인증서 파일(/etc/haproxy/certs/example.com.pem)이 실제로 있어야
 검사를 통과합니다. 파일 안 주석에 만드는 방법이 적혀 있습니다.
+
+15번은 global 섹션에 external-check 선언이 있어야만 검사가 됩니다. 예제와 이름이
+같은 .global 파일이 있으면 check-example.sh 가 00-base.cfg 대신 그것을 뼈대로
+골라 쓰므로, 따로 해 줄 일은 없습니다.
 
 ------------------------------------------------------------------------------
  주의

@@ -433,6 +433,8 @@ cat /usr/share/haproxy/examples/README.txt      # 전체 목록과 사용법
 | `11-tcp-passthrough.cfg` | [8. 일반 TCP 서비스 중계](#8-일반-tcp-서비스-중계) |
 | `12-rate-limit.cfg` | [9. 접속 제한과 속도 제한](#9-접속-제한과-속도-제한) |
 | `13-maintenance.cfg` | [10. 서버 점검 처리](#10-서버-점검maintenance-처리) |
+| `14-agent-check.cfg` | [11. 외부 프로그램으로 동적 제어](#11-외부-프로그램으로-서버-상태-동적-제어) |
+| `15-external-check.cfg` | [11. 외부 프로그램으로 동적 제어](#11-외부-프로그램으로-서버-상태-동적-제어) |
 
 **붙여 넣기 전에 예제만 따로 검사해 볼 수도 있습니다.** 예제 파일에는 `frontend`/`backend`/`listen` 블록만 들어 있어(그래야 통째로 복사할 수 있으니까요) 그대로는 검사할 수 없는데, 같은 디렉터리의 `00-base.cfg`가 `global`/`defaults` 자리를 채워 줍니다. 도우미 스크립트가 이걸 대신 해 줍니다.
 
@@ -840,6 +842,131 @@ echo "show servers state" | sudo socat stdio /run/haproxy/haproxy.sock
 ```
 
 이 방식은 HAProxy를 재시작하지 않으므로 다른 서버의 연결에 전혀 영향을 주지 않습니다. [통계 페이지](#통계stats-페이지)에서 `stats admin`을 켜 두었다면 브라우저 버튼으로도 같은 일을 할 수 있습니다.
+
+---
+
+### 11. 외부 프로그램으로 서버 상태 동적 제어
+
+앞의 10번은 **사람이** 관리 소켓에 명령을 넣는 방식이었습니다. 이걸 **프로그램이 알아서** 하게 만들 수 있습니다. HAProxy는 두 가지 길을 제공하는데, 성격이 꽤 다릅니다.
+
+| | `agent-check` | `option external-check` |
+|---|---|---|
+| 방식 | 서버에 띄운 에이전트에 **TCP로 물어봄** | HAProxy가 **프로그램을 실행** |
+| 할 수 있는 것 | 제외·복귀 + 가중치·maxconn 조정 | 제외·복귀 (종료 코드 0/비0) |
+| 기본 `chroot` | **그대로 둬도 됨** | **꺼야 함** |
+| `global` 수정 | 불필요 | `external-check`, `insecure-fork-wanted` 필요 |
+| 공식 문서 입장 | 이쪽을 권장 | "strongly recommended against" |
+
+**웬만하면 `agent-check`를 쓰세요.** 아래 함정 때문입니다.
+
+#### 함정 — `external-check`와 chroot는 함께 쓸 수 없습니다
+
+이 패키지의 기본 설정에는 `chroot /var/lib/haproxy`가 들어 있고, `/var/lib/haproxy`는 **빈 디렉터리**입니다. HAProxy는 격리된 뒤에 스크립트를 실행하므로 그 안에는 셸도 스크립트도 없습니다. 결과는 이렇습니다.
+
+```
+web1  status=DOWN  check=255
+web2  status=DOWN  check=255
+```
+
+서버는 멀쩡한데 **전부 DOWN**이 됩니다. 헬스체크가 고장 난 것이지 서버가 죽은 게 아닌데도 화면상으로는 구분이 안 되니, 원인을 찾기 어렵습니다. `chroot` 줄을 지우면 정상 동작합니다.
+
+#### agent-check — 서버가 스스로 트래픽을 조절
+
+백엔드 서버마다 작은 에이전트를 띄워 두면, HAProxy가 주기적으로 접속해 한 줄을 읽고 그대로 따릅니다.
+
+```
+backend web_servers
+  balance roundrobin
+  option httpchk GET /health
+  http-check expect status 200
+  server web1 10.0.0.11:8080 weight 100 check inter 2s agent-check agent-port 9101 agent-inter 2s
+  server web2 10.0.0.12:8080 weight 100 check inter 2s agent-check agent-port 9101 agent-inter 2s
+```
+
+에이전트는 상태 파일 한 줄을 읽어 주는 것으로 충분합니다. 백엔드 서버에서 실행합니다.
+
+```bash
+sudo dnf install -y socat
+echo up | sudo tee /etc/haproxy-agent-state
+socat TCP-LISTEN:9101,fork,reuseaddr SYSTEM:'cat /etc/haproxy-agent-state'
+```
+
+이제 그 서버에서 파일만 바꾸면 트래픽이 즉시 조절됩니다. 배포 스크립트가 "나 빼줘" → 배포 → "다시 넣어줘"를 스스로 하게 만드는 식입니다.
+
+```bash
+echo drain | sudo tee /etc/haproxy-agent-state   # 새 연결 차단 (기존 연결은 유지)
+echo ready | sudo tee /etc/haproxy-agent-state   # 다시 투입
+echo "50%" | sudo tee /etc/haproxy-agent-state   # 절반만 받기
+```
+
+에이전트가 돌려줄 수 있는 말은 세 갈래입니다. 여러 개를 공백으로 이어 붙일 수 있고, 적지 않은 항목은 그대로 유지됩니다.
+
+| 갈래 | 값 | 뜻 |
+|---|---|---|
+| 헬스 | `up` / `down` / `fail` / `stopped` | 정상 복귀 / 장애 처리 (표시 문구만 다름) |
+| 관리 | `ready` / `drain` / `maint` | 해제 / 새 연결만 차단 / 완전 제외 |
+| 용량 | `50%`, `weight:25`, `maxconn:30` | 가중치·동시 연결 상한 조정 |
+
+**꼭 알아 둘 두 가지가 있습니다.**
+
+`maint`는 `ready`를 받기 전까지 풀리지 않습니다. `maint` 상태에서 `down`이나 `50%`를 보내도 무시되니 `ready`를 먼저 보내세요.
+
+백분율은 `server` 줄의 `weight` 기준입니다. `weight`를 생략하면 기본값이 1이라 `50%`가 **0으로 내려가 서버가 통째로 빠집니다.** 위 예제가 `weight 100`을 명시한 이유입니다.
+
+설명을 덧붙이면 통계 화면에 함께 뜨는데, `#` 앞에 **공백이 있어야** 합니다.
+
+```
+down #DB 점검 중        (O)
+down#DB 점검 중         (X) — 통째로 모르는 단어가 되어 무시됩니다
+```
+
+에이전트가 개입한 서버는 통계 화면에 `DRAIN (agent)`, `DOWN (agent)`처럼 `(agent)`가 붙어 구분됩니다. 그리고 이 포트를 잡으면 서버를 마음대로 빼고 넣을 수 있으니 **방화벽으로 HAProxy만 접근하도록 막으세요.**
+
+#### external-check — 스크립트를 직접 실행
+
+TCP나 HTTP로 표현할 수 없는 조건(복제 지연, 라이선스 서버 상태 등)을 검사할 때만 쓰세요. 종료 코드 `0`이면 정상, 그 외는 장애로 보고 해당 서버를 제외합니다.
+
+`global` 섹션에 두 줄을 넣고 `chroot`를 지운 뒤에 씁니다.
+
+```
+global
+    external-check
+    insecure-fork-wanted
+    # chroot /var/lib/haproxy   <-- 반드시 지우거나 주석 처리
+```
+
+```
+backend web_servers
+  balance roundrobin
+  option external-check
+  external-check path "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin"
+  external-check command /opt/haproxy-checks/check-replica.sh
+  server web1 10.0.0.11:8080 check inter 10s
+  server web2 10.0.0.12:8080 check inter 10s
+```
+
+`global`에 `external-check`가 없으면 **문법 검사 단계에서 거부**되므로 그냥 넘어갈 일은 없습니다.
+
+```
+[ALERT] Proxy 'web_servers' : 'option external-check' unable to find required 'global.external-check'.
+```
+
+스크립트는 인자 네 개(`프론트엔드 주소`, `포트`, `서버 주소`, `서버 포트`)를 받습니다. 다만 `backend` 섹션에는 붙어 있는 프론트엔드가 없어 앞 두 개는 `NOT_USED`가 들어오므로, 서버 정보는 환경 변수로 받는 편이 확실합니다.
+
+```bash
+#!/bin/bash
+# 복제 지연이 10초를 넘으면 이 서버를 뺀다.
+LAG=$(mysql -h "$HAPROXY_SERVER_ADDR" -u haproxy_check -N -B \
+            -e "SHOW REPLICA STATUS\G" 2>/dev/null \
+      | awk -F: '/Seconds_Behind_Source/ {print $2+0}')
+[ -z "$LAG" ] && exit 1        # 조회 실패도 장애로 본다
+[ "$LAG" -gt 10 ] && exit 1
+exit 0
+```
+
+`HAPROXY_SERVER_NAME`, `HAPROXY_SERVER_ADDR`, `HAPROXY_SERVER_PORT`, `HAPROXY_SERVER_CURCONN`, `HAPROXY_SERVER_MAXCONN` 등을 쓸 수 있습니다. 환경은 이 변수들만 남기고 비워지며 `PATH`조차 없으므로, 위처럼 `external-check path`를 지정하거나 명령을 절대 경로로 쓰세요.
+
+스크립트는 짧고 빨라야 합니다. 검사 주기마다 서버 수만큼 프로세스가 새로 뜨므로, 무거운 스크립트를 짧은 주기로 돌리면 그 자체가 부하가 됩니다. `insecure-fork-wanted`가 HAProxy의 프로세스 생성 차단 보호를 통째로 끈다는 점도 기억해 두세요.
 
 ---
 

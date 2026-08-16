@@ -1,0 +1,54 @@
+#==============================================================================
+# 15-external-check.global — 15번 예제 전용 문법 검사 뼈대
+#==============================================================================
+# 이 파일은 붙여 넣는 예제가 아닙니다.
+#
+# 15-external-check.cfg 는 global 섹션에 external-check 가 선언되어 있어야만
+# 문법 검사를 통과합니다. 없으면 다음과 같이 거부당합니다.
+#
+#   [ALERT] Proxy 'web_servers' : 'option external-check' unable to find
+#           required 'global.external-check'.
+#
+# 그래서 00-base.cfg 대신 이 파일이 쓰입니다. check-example.sh 는 예제와 이름이
+# 같은 .global 파일이 있으면 그것을 뼈대로 골라 줍니다.
+#
+# 00-base.cfg 와 다른 점은 두 가지입니다.
+#
+#   * external-check 와 insecure-fork-wanted 를 켰습니다.
+#   * chroot 줄이 없습니다. chroot 안에서는 스크립트를 실행할 수 없습니다.
+#
+# 두 가지 모두 15-external-check.cfg 를 실제로 쓰려면 /etc/haproxy/haproxy.cfg
+# 에도 똑같이 해 주어야 하는 변경입니다.
+#==============================================================================
+
+global
+    log 127.0.0.1 local0
+    log 127.0.0.1 local1 notice
+    stats socket /run/haproxy/haproxy.sock mode 600 level admin
+    stats timeout 30s
+    user haproxy
+    group haproxy
+
+    # 외부 프로그램 실행 허용. 아래 두 줄이 없으면 15번 예제는 뜨지 않습니다.
+    external-check
+    insecure-fork-wanted
+
+    ca-base /etc/ssl/certs
+    crt-base /etc/ssl/private
+    ssl-default-bind-ciphers kEECDH+aRSA+AES:kRSA+AES:+AES256:RC4-SHA:!kEDH:!LOW:!EXP:!MD5:!aNULL:!eNULL
+
+defaults
+    log     global
+    mode    http
+    option  httplog
+    option  dontlognull
+    timeout connect 5000
+    timeout client  50000
+    timeout server  50000
+    errorfile 400 /etc/haproxy/errors/400.http
+    errorfile 403 /etc/haproxy/errors/403.http
+    errorfile 408 /etc/haproxy/errors/408.http
+    errorfile 500 /etc/haproxy/errors/500.http
+    errorfile 502 /etc/haproxy/errors/502.http
+    errorfile 503 /etc/haproxy/errors/503.http
+    errorfile 504 /etc/haproxy/errors/504.http
