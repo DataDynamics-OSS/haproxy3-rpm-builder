@@ -24,18 +24,11 @@ Source3: %{name}.logrotate
 Source4: %{name}.syslog%{?dist}
 Source5: halog.1
 
-# Ready-to-use config recipes. They ship under /usr/share/haproxy rather than
-# as %%doc so `rpm --excludedocs` can't strip them: they are templates users
-# copy from, not reading material.
-#
-# Two independently written sets live here. The "recipe" set is compact -- one
-# file per topic, meant to be read top to bottom. The "example" set is finer
-# grained and comes with a syntax checker. Both are kept; README.txt explains
-# which is which.
+# Ready-to-use config recipes, one file per README example. They ship under
+# /usr/share/haproxy rather than as %%doc so `rpm --excludedocs` can't strip
+# them: they are templates users copy from, not reading material.
 Source10: README.txt
 Source11: check-example.sh
-
-# Fine-grained set (+ skeletons used only for syntax checking)
 Source20: 00-base.cfg
 Source21: 01-web-http-lb.cfg
 Source22: 02-real-client-ip.cfg
@@ -50,25 +43,13 @@ Source30: 10-redis.cfg
 Source31: 11-tcp-passthrough.cfg
 Source32: 12-rate-limit.cfg
 Source33: 13-maintenance.cfg
-Source34: 14-agent-check.cfg
-Source35: 15-external-check.cfg
-# Skeleton for checking Source35: it needs global.external-check, which the
+Source34: 14-basic-auth.cfg
+Source35: 15-agent-check.cfg
+Source36: 16-external-check.cfg
+# Skeleton for checking Source36: it needs global.external-check, which the
 # shared 00-base.cfg deliberately does not enable.
-Source36: 15-external-check.global
-
-# Compact set
-Source50: recipe-01-web-http.cfg
-Source51: recipe-02-https.cfg
-Source52: recipe-03-routing.cfg
-Source53: recipe-04-sticky-session.cfg
-Source54: recipe-05-basic-auth.cfg
-Source55: recipe-06-mysql.cfg
-Source56: recipe-07-postgresql.cfg
-Source57: recipe-08-redis.cfg
-Source58: recipe-09-tcp.cfg
-Source59: recipe-10-rate-limit.cfg
-Source60: recipe-11-maintenance.cfg
-Source61: recipe-12-dynamic-exclusion.cfg
+Source37: 16-external-check.global
+Source38: 17-dynamic-map.cfg
 
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
 
@@ -193,21 +174,11 @@ popd
 %{__install} -c -m 644 %{SOURCE31} %{example_dir}/11-tcp-passthrough.cfg
 %{__install} -c -m 644 %{SOURCE32} %{example_dir}/12-rate-limit.cfg
 %{__install} -c -m 644 %{SOURCE33} %{example_dir}/13-maintenance.cfg
-%{__install} -c -m 644 %{SOURCE34} %{example_dir}/14-agent-check.cfg
-%{__install} -c -m 644 %{SOURCE35} %{example_dir}/15-external-check.cfg
-%{__install} -c -m 644 %{SOURCE36} %{example_dir}/15-external-check.global
-%{__install} -c -m 644 %{SOURCE50} %{example_dir}/recipe-01-web-http.cfg
-%{__install} -c -m 644 %{SOURCE51} %{example_dir}/recipe-02-https.cfg
-%{__install} -c -m 644 %{SOURCE52} %{example_dir}/recipe-03-routing.cfg
-%{__install} -c -m 644 %{SOURCE53} %{example_dir}/recipe-04-sticky-session.cfg
-%{__install} -c -m 644 %{SOURCE54} %{example_dir}/recipe-05-basic-auth.cfg
-%{__install} -c -m 644 %{SOURCE55} %{example_dir}/recipe-06-mysql.cfg
-%{__install} -c -m 644 %{SOURCE56} %{example_dir}/recipe-07-postgresql.cfg
-%{__install} -c -m 644 %{SOURCE57} %{example_dir}/recipe-08-redis.cfg
-%{__install} -c -m 644 %{SOURCE58} %{example_dir}/recipe-09-tcp.cfg
-%{__install} -c -m 644 %{SOURCE59} %{example_dir}/recipe-10-rate-limit.cfg
-%{__install} -c -m 644 %{SOURCE60} %{example_dir}/recipe-11-maintenance.cfg
-%{__install} -c -m 644 %{SOURCE61} %{example_dir}/recipe-12-dynamic-exclusion.cfg
+%{__install} -c -m 644 %{SOURCE34} %{example_dir}/14-basic-auth.cfg
+%{__install} -c -m 644 %{SOURCE35} %{example_dir}/15-agent-check.cfg
+%{__install} -c -m 644 %{SOURCE36} %{example_dir}/16-external-check.cfg
+%{__install} -c -m 644 %{SOURCE37} %{example_dir}/16-external-check.global
+%{__install} -c -m 644 %{SOURCE38} %{example_dir}/17-dynamic-map.cfg
 
 %{__install} -p -m 0755 ./admin/halog/halog %{buildroot}%{_bindir}/halog
 %{__install} -p -m 0755 ./admin/iprange/iprange %{buildroot}%{_bindir}/iprange

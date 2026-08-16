@@ -460,31 +460,10 @@ sudo haproxy -c -f /etc/haproxy/haproxy.cfg && sudo systemctl reload haproxy
 
 > 이 문서의 모든 예제는 HAProxy 3.4.3에서 문법 검사(`haproxy -c`)를 **경고 없이** 통과하는 것을 확인했습니다. 웹·라우팅·세션 고정·HTTPS·TCP·속도 제한·기본 인증·동적 제외 예제는 실제로 띄워 동작까지 검증했습니다.
 
-### 예제는 패키지에도 들어 있습니다
-
-이 문서를 찾아보지 않아도 되도록, **아래 예제를 파일로도 함께 설치**합니다. 패키지를 깔면 서버에서 바로 꺼내 쓸 수 있습니다.
-
-```bash
-ls /usr/share/doc/haproxy/recipes/
-cat /usr/share/doc/haproxy/recipes/README.txt
-```
-
-각 파일은 `global`이나 `defaults` 없이 프록시 정의만 담은 **조각**입니다. 그래서 지금 쓰는 설정과 합쳐서 미리 시험해 볼 수 있습니다. `-f`를 여러 번 주면 HAProxy가 설정을 합쳐 검사합니다.
-
-```bash
-haproxy -c -f /etc/haproxy/haproxy.cfg -f /usr/share/doc/haproxy/recipes/01-web-http.cfg
-```
-
-붙여 넣기 전에 이렇게 확인해 보면, 기존 설정과 이름이 겹치거나 문법이 틀린 것을 미리 잡을 수 있습니다.
-
 ### 예제는 파일로도 설치됩니다
 
 아래 예제들은 패키지에 **파일로 함께 들어 있습니다.** 문서를 보며 옮겨 적을 필요 없이 `/usr/share/haproxy/examples/`에서 바로 꺼내 쓰면 됩니다. 각 파일 맨 위 주석에 무엇을 준비해야 하고 어떤 값을 고쳐야 하는지가 적혀 있습니다.
 
-같은 주제를 다루는 모음이 **두 벌** 들어 있습니다. 성격이 다르니 편한 쪽을 고르세요.
-
-- **`NN-....cfg`** — 주제를 잘게 나눈 세트. 한 파일이 한 가지만 다뤄 필요한 것만 집어 오기 좋고, 아래 문법 검사 도구를 쓸 수 있습니다. 아래 표가 이 세트입니다.
-- **`recipe-NN-....cfg`** — 주제를 굵직하게 묶은 세트. 관련 설정이 한 파일에 모여 있어 읽어 내려가며 익히기 좋습니다.
 
 ```bash
 ls /usr/share/haproxy/examples/
@@ -506,16 +485,22 @@ cat /usr/share/haproxy/examples/README.txt      # 전체 목록과 사용법
 | `11-tcp-passthrough.cfg` | [8. 일반 TCP 서비스 중계](#8-일반-tcp-서비스-중계) |
 | `12-rate-limit.cfg` | [9. 접속 제한과 속도 제한](#9-접속-제한과-속도-제한) |
 | `13-maintenance.cfg` | [10. 서버 점검 처리](#10-서버-점검maintenance-처리) |
-| `14-agent-check.cfg` | [12. 외부 프로그램으로 동적 제어](#12-외부-프로그램으로-서버-상태-동적-제어) |
-| `15-external-check.cfg` | [12. 외부 프로그램으로 동적 제어](#12-외부-프로그램으로-서버-상태-동적-제어) |
-| `recipe-05-basic-auth.cfg` | [11. HTTP 기본 인증](#11-http-기본-인증-basic-auth) |
-| `recipe-12-dynamic-exclusion.cfg` | [12. 외부 프로그램으로 동적 제어](#12-외부-프로그램으로-서버-상태-동적-제어) |
+| `14-basic-auth.cfg` | [11. HTTP 기본 인증](#11-http-기본-인증-basic-auth) |
+| `15-agent-check.cfg` | [12. 방법 1 — agent-check](#12-외부-프로그램으로-서버-상태-동적-제어) |
+| `16-external-check.cfg` | [12. 방법 2 — external-check](#12-외부-프로그램으로-서버-상태-동적-제어) |
+| `17-dynamic-map.cfg` | [12. 방법 4 — 맵 파일](#12-외부-프로그램으로-서버-상태-동적-제어) |
 
 **붙여 넣기 전에 예제만 따로 검사해 볼 수도 있습니다.** 예제 파일에는 `frontend`/`backend`/`listen` 블록만 들어 있어(그래야 통째로 복사할 수 있으니까요) 그대로는 검사할 수 없는데, 같은 디렉터리의 `00-base.cfg`가 `global`/`defaults` 자리를 채워 줍니다. 도우미 스크립트가 이걸 대신 해 줍니다.
 
 ```bash
 /usr/share/haproxy/examples/check-example.sh 01-web-http-lb.cfg   # 하나만
 /usr/share/haproxy/examples/check-example.sh --all                # 전부
+```
+
+**지금 쓰는 설정과 합쳐서** 미리 시험해 볼 수도 있습니다. 이러면 기존 설정과 프록시 이름이 겹치는 것까지 붙여 넣기 전에 잡을 수 있습니다.
+
+```bash
+haproxy -c -f /etc/haproxy/haproxy.cfg -f /usr/share/haproxy/examples/01-web-http-lb.cfg
 ```
 
 > `03`·`04`번은 인증서 파일이 실제로 있어야 검사를 통과합니다. 만드는 방법은 [3번 예제](#3-https-처리-ssl-종료)와 해당 파일 주석에 있습니다.

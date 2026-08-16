@@ -10,28 +10,11 @@
 어떤 값을 바꿔야 하는지가 적혀 있습니다. 먼저 읽어 보세요.
 
 ------------------------------------------------------------------------------
- 두 벌이 들어 있습니다
-------------------------------------------------------------------------------
-
-같은 주제를 다루는 예제 모음이 두 벌 있습니다. 성격이 달라 둘 다 남겼습니다.
-아무거나 하나를 골라 쓰면 되고, 섞어 쓸 필요는 없습니다.
-
-  숫자로 시작하는 파일    NN-....cfg
-      주제를 잘게 나눈 세트입니다. 한 파일이 한 가지만 다루므로 필요한 것만
-      집어 오기 쉽고, 아래 check-example.sh 로 문법 검사를 할 수 있습니다.
-      외부 스크립트 실행(external-check) 예제는 이쪽에만 있습니다.
-
-  recipe- 로 시작하는 파일  recipe-NN-....cfg
-      주제를 굵직하게 묶은 세트입니다. 한 파일에 관련 설정이 함께 들어 있어
-      처음부터 끝까지 읽어 내려가며 익히기 좋습니다. HTTP 기본 인증과 맵 파일
-      동적 차단은 이쪽에만 있습니다.
-
-------------------------------------------------------------------------------
- 파일 목록 — 잘게 나눈 세트
+ 파일 목록
 ------------------------------------------------------------------------------
 
   00-base.cfg               문법 검사용 global/defaults 뼈대 (붙여 넣는 예제 아님)
-  15-external-check.global  15번 예제 전용 뼈대 (붙여 넣는 예제 아님)
+  16-external-check.global  16번 예제 전용 뼈대 (붙여 넣는 예제 아님)
 
   01-web-http-lb.cfg        웹 서버 부하 분산 (HTTP) — 가장 기본
   02-real-client-ip.cfg     백엔드에 진짜 접속자 IP 알려주기 (X-Forwarded-For)
@@ -46,29 +29,14 @@
   11-tcp-passthrough.cfg    일반 TCP 서비스 중계 (SMTP 등)
   12-rate-limit.cfg         접속 제한과 속도 제한
   13-maintenance.cfg        서버 점검(maintenance) 처리
-  14-agent-check.cfg        외부 에이전트로 상태·가중치 동적 제어 (권장)
-  15-external-check.cfg     외부 스크립트를 실행해 헬스체크 (chroot 꺼야 함)
+  14-basic-auth.cfg         HTTP 기본 인증 (Basic Auth)
+  15-agent-check.cfg        외부 에이전트로 상태·가중치 동적 제어 (권장)
+  16-external-check.cfg     외부 스크립트를 실행해 헬스체크 (chroot 꺼야 함)
+  17-dynamic-map.cfg        맵 파일로 요청 단위 동적 차단
 
   check-example.sh          예제 하나를 문법 검사해 주는 도우미 스크립트
 
-------------------------------------------------------------------------------
- 파일 목록 — 굵직하게 묶은 세트
-------------------------------------------------------------------------------
-
-  recipe-01-web-http.cfg          웹 서버 부하 분산 (HTTP), 헬스체크 조정
-  recipe-02-https.cfg             HTTPS 처리(SSL 종료), HTTP→HTTPS 전환, HTTP/2
-  recipe-03-routing.cfg           경로·도메인별 라우팅 (ACL)
-  recipe-04-sticky-session.cfg    세션 고정 (쿠키 / 접속자 IP)
-  recipe-05-basic-auth.cfg        HTTP 기본 인증          <-- 이쪽에만 있음
-  recipe-06-mysql.cfg             MySQL/MariaDB (읽기·쓰기 분리 포함)
-  recipe-07-postgresql.cfg        PostgreSQL
-  recipe-08-redis.cfg             Redis (마스터 자동 판별)
-  recipe-09-tcp.cfg               일반 TCP 서비스 중계
-  recipe-10-rate-limit.cfg        접속 제한과 속도 제한
-  recipe-11-maintenance.cfg       서버 점검 처리
-  recipe-12-dynamic-exclusion.cfg 외부 정보로 서버를 동적으로 제외
-                                  (agent-check / Runtime API / 맵 파일)
-                                  맵 파일 동적 차단은 이쪽에만 있음
+번호는 README.md 의 "설정 예제 모음" 차례와 같은 순서입니다.
 
 ------------------------------------------------------------------------------
  예제를 적용하는 공통 절차
@@ -108,18 +76,13 @@
 03번과 04번은 인증서 파일(/etc/haproxy/certs/example.com.pem)이 실제로 있어야
 검사를 통과합니다. 파일 안 주석에 만드는 방법이 적혀 있습니다.
 
-15번은 global 섹션에 external-check 선언이 있어야만 검사가 됩니다. 예제와 이름이
+16번은 global 섹션에 external-check 선언이 있어야만 검사가 됩니다. 예제와 이름이
 같은 .global 파일이 있으면 check-example.sh 가 00-base.cfg 대신 그것을 뼈대로
 골라 쓰므로, 따로 해 줄 일은 없습니다.
 
-recipe- 세트도 같은 방법으로 검사할 수 있습니다.
+17번은 맵 파일이 미리 있어야 합니다. 빈 파일이면 됩니다.
 
-  /usr/share/haproxy/examples/check-example.sh recipe-05-basic-auth.cfg
-
-다만 recipe-02 는 인증서가, recipe-12 는 맵 파일이 미리 있어야 합니다.
-파일 안 주석에 준비 방법이 적혀 있습니다.
-
-  touch /etc/haproxy/blocked.map
+  sudo touch /etc/haproxy/blocked.map
 
 ------------------------------------------------------------------------------
  주의

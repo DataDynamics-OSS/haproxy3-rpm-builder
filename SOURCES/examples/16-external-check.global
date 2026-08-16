@@ -1,9 +1,9 @@
 #==============================================================================
-# 15-external-check.global — 15번 예제 전용 문법 검사 뼈대
+# 16-external-check.global — 16번 예제 전용 문법 검사 뼈대
 #==============================================================================
 # 이 파일은 붙여 넣는 예제가 아닙니다.
 #
-# 15-external-check.cfg 는 global 섹션에 external-check 가 선언되어 있어야만
+# 16-external-check.cfg 는 global 섹션에 external-check 가 선언되어 있어야만
 # 문법 검사를 통과합니다. 없으면 다음과 같이 거부당합니다.
 #
 #   [ALERT] Proxy 'web_servers' : 'option external-check' unable to find
@@ -17,7 +17,7 @@
 #   * external-check 와 insecure-fork-wanted 를 켰습니다.
 #   * chroot 줄이 없습니다. chroot 안에서는 스크립트를 실행할 수 없습니다.
 #
-# 두 가지 모두 15-external-check.cfg 를 실제로 쓰려면 /etc/haproxy/haproxy.cfg
+# 두 가지 모두 16-external-check.cfg 를 실제로 쓰려면 /etc/haproxy/haproxy.cfg
 # 에도 똑같이 해 주어야 하는 변경입니다.
 #==============================================================================
 
@@ -29,7 +29,7 @@ global
     user haproxy
     group haproxy
 
-    # 외부 프로그램 실행 허용. 아래 두 줄이 없으면 15번 예제는 뜨지 않습니다.
+    # 외부 프로그램 실행 허용. 아래 두 줄이 없으면 16번 예제는 뜨지 않습니다.
     external-check
     insecure-fork-wanted
 
