@@ -105,6 +105,25 @@ https://github.com/DataDynamics/haproxy3-rpm-builder-internal
 %define __perl_requires /bin/true
 
 %build
+# This package is built by `make ... USE_PROMETHEUS=0 VERSION=3.4.3 ...`, and
+# GNU make exports every command-line variable into the environment of the
+# commands it runs -- MAKEFLAGS carries them too, but the plain variables are
+# there as well, so clearing MAKEFLAGS alone would not be enough. HAProxy's
+# Makefile then picks them up as if they had been meant for it:
+#
+#   USE_PROMETHEUS  is not one of its build options, so every build printed
+#                   "ignoring unknown build option: USE_PROMETHEUS=0".
+#   VERSION         is one of its variables. A command-line value outranks the
+#                   Makefile's own assignment, so HAProxy skipped reading the
+#                   VERSION file shipped in the tarball. The two agree today,
+#                   which is the only reason this never produced a mislabelled
+#                   binary.
+#
+# Drop them here, at the boundary between the two build systems. Everything
+# HAProxy should know is passed explicitly on the make command line below, and
+# the rpm-level %%{version}/%%{_use_lua} macros are unaffected by this.
+unset MAKEFLAGS MFLAGS MAKELEVEL VERSION MAINVERSION RELEASE NO_SUDO USE_LUA USE_PROMETHEUS
+
 RPM_BUILD_NCPUS="`/usr/bin/nproc 2>/dev/null || /usr/bin/getconf _NPROCESSORS_ONLN`";
 
 # Three options this spec used to pass are gone from HAProxy 3, which reports
