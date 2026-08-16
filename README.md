@@ -1,12 +1,14 @@
 # HAProxy 3 RPM 빌더
 
-이 저장소는 **HAProxy 3.4.3**을 RHEL 계열 리눅스(Rocky Linux, AlmaLinux, CentOS, RHEL)에 바로 설치할 수 있는 **RPM 패키지로 만들어 주는 도구**입니다.
+이 저장소는 **HAProxy 3.4.3**을 **RHEL 8 / RHEL 9**(및 Rocky Linux, AlmaLinux 같은 호환 배포판)에 바로 설치할 수 있는 **RPM 패키지로 만들어 주는 도구**입니다. 두 버전용 패키지를 한 번에 만들어 줍니다.
 
-리눅스 배포판이 기본으로 제공하는 HAProxy는 안정성을 위해 보통 몇 년 전 버전에 머물러 있습니다. 예를 들어 Rocky Linux 9의 기본 저장소(AppStream)에는 HAProxy 2.8이 들어 있는데, 이 버전에는 ACME 자동 인증서 발급 같은 3.x 신규 기능이 없습니다. 최신 기능이 필요하다면 직접 소스를 받아 컴파일해야 하지만, 그렇게 설치하면 나중에 삭제나 업그레이드가 지저분해집니다.
+리눅스 배포판이 기본으로 제공하는 HAProxy는 안정성을 위해 보통 몇 년 전 버전에 머물러 있어서, ACME 자동 인증서 발급 같은 3.x 신규 기능을 쓸 수 없습니다. 최신 기능이 필요하다면 직접 소스를 받아 컴파일해야 하지만, 그렇게 설치하면 나중에 삭제나 업그레이드가 지저분해집니다.
 
 이 저장소는 그 중간을 메웁니다. 최신 HAProxy 소스를 받아서 컴파일하되, 결과물을 **RPM 패키지로 포장**해 줍니다. 그래서 `dnf install`로 설치하고 `dnf remove`로 깔끔하게 지울 수 있으며, systemd 서비스 등록·로그 설정·로그 로테이션까지 모두 자동으로 잡힙니다.
 
 > **처음 오셨다면** — [빠른 시작](#빠른-시작) 세 줄만 따라 하시면 됩니다. 나머지는 필요할 때 찾아보세요.
+>
+> **어느 버전을 쓸지 고민된다면** — [RELEASE.md](RELEASE.md) 에 버전별 주요 기능과 지원 기간, 선택 기준을 정리해 두었습니다.
 
 ---
 
@@ -39,10 +41,18 @@ cd haproxy3-rpm-builder-internal
 make run-docker
 ```
 
-몇 분 뒤 `RPMS/` 디렉터리에 RPM 파일이 생깁니다. 이걸 대상 서버로 옮겨서 설치하면 됩니다.
+몇 분 뒤 RPM 파일이 **OS 버전별로 나뉘어** 생깁니다.
+
+```
+RPMS/
+├── el8/    ← RHEL 8 / Rocky 8 / Alma 8 용
+└── el9/    ← RHEL 9 / Rocky 9 / Alma 9 용
+```
+
+대상 서버의 버전에 맞는 것을 옮겨서 설치하면 됩니다.
 
 ```bash
-sudo dnf install -y ./RPMS/haproxy-3.4.3-1.el9.x86_64.rpm
+sudo dnf install -y ./RPMS/el9/haproxy-3.4.3-1.el9.x86_64.rpm
 sudo systemctl enable --now haproxy
 ```
 
@@ -52,16 +62,27 @@ sudo systemctl enable --now haproxy
 
 ## 무엇이 만들어지나요
 
-빌드가 끝나면 RPM 파일 네 개가 생깁니다. 보통은 **첫 번째 것만 설치하면 됩니다.**
+빌드가 끝나면 **OS 버전별로** RPM 파일 네 개씩 생깁니다. 보통은 **첫 번째 것만 설치하면 됩니다.**
 
 | 파일 | 크기 | 설명 |
 |---|---|---|
 | `haproxy-3.4.3-1.el9.x86_64.rpm` | 약 2.4 MB | **실제로 설치할 패키지.** HAProxy 본체와 설정 파일이 들어 있습니다. |
-| `haproxy-3.4.3-1.el9.src.rpm` | 약 5.2 MB | 소스 RPM. 다른 곳에서 이 패키지를 그대로 재현해 빌드할 때 씁니다. |
+| `haproxy-3.4.3-1.el9.src.rpm` | 약 5.3 MB | 소스 RPM. 다른 곳에서 이 패키지를 그대로 재현해 빌드할 때 씁니다. |
 | `haproxy-debuginfo-…rpm` | 약 48 KB | 디버깅 심볼. 장애 분석으로 코어 덤프를 뜯어볼 때만 필요합니다. |
 | `haproxy-debugsource-…rpm` | 약 43 KB | 디버깅용 소스. 위와 같은 용도입니다. |
 
-파일 이름의 `1`은 패키지 릴리스 번호이고 `el9`는 RHEL 9 계열용이라는 뜻입니다. Rocky Linux 9, AlmaLinux 9, RHEL 9에 설치할 수 있습니다.
+파일 이름의 `1`은 패키지 릴리스 번호이고, **`el8`/`el9`가 어느 OS용인지 나타냅니다.** `el8`은 RHEL 8·Rocky 8·AlmaLinux 8에, `el9`는 RHEL 9·Rocky 9·AlmaLinux 9에 설치합니다.
+
+> **버전을 맞춰서 설치하세요.** RHEL 8 서버에 `el9` 패키지를 넣으면 라이브러리 버전이 맞지 않아 설치가 거부되거나 실행되지 않습니다. 서버 버전은 `cat /etc/redhat-release`로 확인할 수 있습니다.
+
+두 패키지는 같은 소스에서 만들어지지만 그 OS가 제공하는 라이브러리에 맞춰 빌드되므로 내용이 다릅니다. 대표적으로 **SSL 라이브러리**가 다릅니다.
+
+| | RHEL 8 | RHEL 9 |
+|---|---|---|
+| 컴파일러 | GCC 8.5 | GCC 11 이상 |
+| OpenSSL | 1.1.1 | 3.x |
+
+OpenSSL 1.1.1은 3.x보다 성능이 좋은 것으로 알려져 있어서, 트래픽이 많다면 RHEL 8 쪽이 유리할 수 있습니다.
 
 ### 설치되는 파일들
 
@@ -100,9 +121,9 @@ Lua 스크립트와 Prometheus 지표는 기본으로 꺼져 있고, 필요하�
 
 빌드 방법은 두 가지이고, 둘 중 **하나만** 고르면 됩니다.
 
-**Docker 방식**을 권장합니다. 빌드에 필요한 컴파일러와 라이브러리가 전부 컨테이너 안에서만 설치되고 끝나기 때문에, 여러분의 서버는 조금도 더러워지지 않습니다. 또 어느 컴퓨터에서 돌리든 항상 Rocky Linux 9 환경에서 빌드되므로 결과물이 늘 똑같습니다. 노트북(맥이든 윈도우든 리눅스든)에서 빌드해서 RPM만 서버로 옮기는 것도 가능합니다.
+**Docker 방식**을 권장합니다. 빌드에 필요한 컴파일러와 라이브러리가 전부 컨테이너 안에서만 설치되고 끝나기 때문에, 여러분의 서버는 조금도 더러워지지 않습니다. 무엇보다 **RHEL 8용과 RHEL 9용을 한 번에** 만들 수 있습니다. RHEL 8 패키지는 RHEL 8 환경에서 빌드해야 하는데, Docker를 쓰면 RHEL 8 서버를 따로 준비하지 않아도 됩니다. 노트북(맥이든 윈도우든 리눅스든)에서 빌드해서 RPM만 서버로 옮기는 것도 가능합니다.
 
-**직접 빌드 방식**은 Docker를 쓸 수 없는 환경일 때 선택합니다. 이 경우 빌드하는 서버 자체가 RHEL 9 계열이어야 하고, 개발 도구 수십 개가 그 서버에 설치됩니다. 운영 서버에서는 권장하지 않습니다.
+**직접 빌드 방식**은 Docker를 쓸 수 없는 환경일 때 선택합니다. 이 경우 **빌드하는 서버와 같은 버전의 패키지만** 만들 수 있습니다. RHEL 9 서버에서 빌드하면 `el9` 패키지만 나옵니다. 개발 도구 수십 개가 그 서버에 설치되므로 운영 서버에서는 권장하지 않습니다.
 
 두 방식 모두 빌드 도중 `haproxy.org`에서 소스 코드를 내려받으므로 **인터넷 연결이 필요합니다.**
 
@@ -124,21 +145,47 @@ cd haproxy3-rpm-builder-internal
 make run-docker
 ```
 
-이 한 줄이 실제로는 세 가지 일을 순서대로 합니다. 먼저 Rocky Linux 9 기반으로 컴파일러가 들어 있는 빌더 이미지를 만들고, 그 컨테이너 안에서 HAProxy 소스를 받아 컴파일한 뒤, 완성된 RPM을 여러분 컴퓨터의 `RPMS/` 디렉터리로 복사해 줍니다.
+이 한 줄이 **RHEL 8용과 RHEL 9용을 차례로** 만들어 줍니다. 각 버전마다 해당 OS의 컨테이너를 띄우고, 그 안에서 HAProxy 소스를 받아 컴파일한 뒤, 완성된 RPM을 `RPMS/el8/`과 `RPMS/el9/`로 복사합니다.
 
-처음 실행하면 Rocky Linux 이미지를 내려받고 개발 도구를 설치하느라 **5~10분쯤** 걸립니다. 두 번째부터는 이미지가 캐시되어 훨씬 빠릅니다.
+처음 실행하면 이미지 두 개를 내려받고 개발 도구를 설치하느라 **10~20분쯤** 걸립니다. 두 번째부터는 이미지가 캐시되어 훨씬 빠릅니다.
 
 끝나면 결과를 확인합니다.
 
 ```bash
-ls -lh RPMS/
+ls -lh RPMS/el8/ RPMS/el9/
 ```
+
+### 한쪽만 빌드하기
+
+RHEL 9만 쓴다면 굳이 둘 다 만들 필요가 없습니다. `EL_VERSIONS`로 원하는 것만 고르세요.
+
+```bash
+make run-docker EL_VERSIONS=9      # RHEL 9 용만
+make run-docker EL_VERSIONS=8      # RHEL 8 용만
+make run-docker EL_VERSIONS="8 9"  # 둘 다 (기본값)
+```
+
+### 베이스 이미지 바꾸기
+
+기본값은 Rocky Linux입니다. AlmaLinux나 사내 미러를 쓰려면 이렇게 바꿉니다.
+
+```bash
+make run-docker BASE_IMAGE_8=almalinux:8 BASE_IMAGE_9=almalinux:9
+```
+
+> Dockerfile은 **하나**입니다. EL8과 EL9의 설치 패키지 목록이 완전히 같아서, 파일을 복제하는 대신 `BASE_IMAGE` 인자로 베이스만 바꿉니다. 나중에 EL10을 추가할 때도 Makefile에 한 줄만 더하면 됩니다.
 
 ---
 
 ## 방법 2 — 서버에서 직접 빌드하기
 
-이 방법은 **RHEL 9 계열 서버에서만** 동작합니다. 먼저 빌드에 필요한 도구를 설치합니다.
+이 방법은 **RHEL 8 또는 RHEL 9 서버에서** 동작하며, **그 서버와 같은 버전의 패키지만** 만들어 냅니다. RHEL 8 서버에서 빌드하면 `el8` 패키지가, RHEL 9에서 빌드하면 `el9` 패키지가 나옵니다. 지원하지 않는 배포판(Fedora, Ubuntu 등)에서 실행하면 아래처럼 즉시 중단됩니다.
+
+```
+error: haproxy: unsupported build target (dist=.fc44). RHEL 8 or 9 required.
+```
+
+먼저 빌드에 필요한 도구를 설치합니다.
 
 ```bash
 sudo dnf groupinstall -y "Development Tools"
@@ -173,6 +220,9 @@ ls -lh rpmbuild/RPMS/x86_64/
 | `MAINVERSION` | `3.4` | HAProxy 계열 버전. 다운로드 경로를 결정합니다. |
 | `VERSION` | `3.4.3` | 정확한 HAProxy 버전 |
 | `RELEASE` | `1` | 패키지 릴리스 번호. 같은 HAProxy 버전으로 패키지를 다시 만들 때 올립니다. |
+| `EL_VERSIONS` | `8 9` | 어느 OS 버전용으로 빌드할지 (Docker 방식 전용) |
+| `BASE_IMAGE_8` | `rockylinux:8` | RHEL 8 빌드에 쓸 컨테이너 이미지 |
+| `BASE_IMAGE_9` | `rockylinux:9` | RHEL 9 빌드에 쓸 컨테이너 이미지 |
 | `USE_LUA` | `0` | Lua 스크립트 지원 |
 | `USE_PROMETHEUS` | `0` | Prometheus 지표 노출 기능 |
 | `NO_SUDO` | `1` | `1`이면 sudo 없이, `0`이면 각 명령에 sudo를 붙여 실행 |
@@ -211,10 +261,11 @@ make run-docker USE_LUA=1 USE_PROMETHEUS=1
 
 ## 설치하고 실행하기
 
-만들어진 RPM을 대상 서버로 옮긴 뒤 설치합니다.
+만들어진 RPM을 대상 서버로 옮긴 뒤 설치합니다. **서버 버전에 맞는 파일**을 골라야 합니다.
 
 ```bash
-sudo dnf install -y ./haproxy-3.4.3-1.el9.x86_64.rpm
+cat /etc/redhat-release                                   # 서버가 8인지 9인지 확인
+sudo dnf install -y ./haproxy-3.4.3-1.el9.x86_64.rpm      # el9 서버라면
 ```
 
 `dnf`는 필요한 라이브러리(OpenSSL, zlib, PCRE2, rsyslog)를 알아서 함께 설치해 줍니다. 설치가 잘 됐는지 버전을 확인해 봅니다.
@@ -407,11 +458,33 @@ sudo haproxy -c -f /etc/haproxy/haproxy.cfg && sudo systemctl reload haproxy
 
 실무에서 자주 쓰는 설정을 용도별로 모았습니다. **필요한 것만 골라서** `/etc/haproxy/haproxy.cfg` 끝에 붙여 넣고, IP 주소와 포트만 환경에 맞게 바꾸면 됩니다.
 
-> 이 문서의 모든 예제는 HAProxy 3.4.3에서 문법 검사(`haproxy -c`)를 **경고 없이** 통과하는 것을 확인했습니다. 웹·라우팅·세션 고정·HTTPS·TCP·속도 제한 예제는 실제 백엔드를 붙여 동작까지 검증했습니다.
+> 이 문서의 모든 예제는 HAProxy 3.4.3에서 문법 검사(`haproxy -c`)를 **경고 없이** 통과하는 것을 확인했습니다. 웹·라우팅·세션 고정·HTTPS·TCP·속도 제한·기본 인증·동적 제외 예제는 실제로 띄워 동작까지 검증했습니다.
+
+### 예제는 패키지에도 들어 있습니다
+
+이 문서를 찾아보지 않아도 되도록, **아래 예제를 파일로도 함께 설치**합니다. 패키지를 깔면 서버에서 바로 꺼내 쓸 수 있습니다.
+
+```bash
+ls /usr/share/doc/haproxy/recipes/
+cat /usr/share/doc/haproxy/recipes/README.txt
+```
+
+각 파일은 `global`이나 `defaults` 없이 프록시 정의만 담은 **조각**입니다. 그래서 지금 쓰는 설정과 합쳐서 미리 시험해 볼 수 있습니다. `-f`를 여러 번 주면 HAProxy가 설정을 합쳐 검사합니다.
+
+```bash
+haproxy -c -f /etc/haproxy/haproxy.cfg -f /usr/share/doc/haproxy/recipes/01-web-http.cfg
+```
+
+붙여 넣기 전에 이렇게 확인해 보면, 기존 설정과 이름이 겹치거나 문법이 틀린 것을 미리 잡을 수 있습니다.
 
 ### 예제는 파일로도 설치됩니다
 
 아래 예제들은 패키지에 **파일로 함께 들어 있습니다.** 문서를 보며 옮겨 적을 필요 없이 `/usr/share/haproxy/examples/`에서 바로 꺼내 쓰면 됩니다. 각 파일 맨 위 주석에 무엇을 준비해야 하고 어떤 값을 고쳐야 하는지가 적혀 있습니다.
+
+같은 주제를 다루는 모음이 **두 벌** 들어 있습니다. 성격이 다르니 편한 쪽을 고르세요.
+
+- **`NN-....cfg`** — 주제를 잘게 나눈 세트. 한 파일이 한 가지만 다뤄 필요한 것만 집어 오기 좋고, 아래 문법 검사 도구를 쓸 수 있습니다. 아래 표가 이 세트입니다.
+- **`recipe-NN-....cfg`** — 주제를 굵직하게 묶은 세트. 관련 설정이 한 파일에 모여 있어 읽어 내려가며 익히기 좋습니다.
 
 ```bash
 ls /usr/share/haproxy/examples/
@@ -433,8 +506,10 @@ cat /usr/share/haproxy/examples/README.txt      # 전체 목록과 사용법
 | `11-tcp-passthrough.cfg` | [8. 일반 TCP 서비스 중계](#8-일반-tcp-서비스-중계) |
 | `12-rate-limit.cfg` | [9. 접속 제한과 속도 제한](#9-접속-제한과-속도-제한) |
 | `13-maintenance.cfg` | [10. 서버 점검 처리](#10-서버-점검maintenance-처리) |
-| `14-agent-check.cfg` | [11. 외부 프로그램으로 동적 제어](#11-외부-프로그램으로-서버-상태-동적-제어) |
-| `15-external-check.cfg` | [11. 외부 프로그램으로 동적 제어](#11-외부-프로그램으로-서버-상태-동적-제어) |
+| `14-agent-check.cfg` | [12. 외부 프로그램으로 동적 제어](#12-외부-프로그램으로-서버-상태-동적-제어) |
+| `15-external-check.cfg` | [12. 외부 프로그램으로 동적 제어](#12-외부-프로그램으로-서버-상태-동적-제어) |
+| `recipe-05-basic-auth.cfg` | [11. HTTP 기본 인증](#11-http-기본-인증-basic-auth) |
+| `recipe-12-dynamic-exclusion.cfg` | [12. 외부 프로그램으로 동적 제어](#12-외부-프로그램으로-서버-상태-동적-제어) |
 
 **붙여 넣기 전에 예제만 따로 검사해 볼 수도 있습니다.** 예제 파일에는 `frontend`/`backend`/`listen` 블록만 들어 있어(그래야 통째로 복사할 수 있으니까요) 그대로는 검사할 수 없는데, 같은 디렉터리의 `00-base.cfg`가 `global`/`defaults` 자리를 채워 줍니다. 도우미 스크립트가 이걸 대신 해 줍니다.
 
@@ -845,7 +920,58 @@ echo "show servers state" | sudo socat stdio /run/haproxy/haproxy.sock
 
 ---
 
-### 11. 외부 프로그램으로 서버 상태 동적 제어
+### 11. HTTP 기본 인증 (Basic Auth)
+
+브라우저 기본 로그인 창으로 접근을 제한합니다. 관리 페이지나 사내 도구처럼 간단한 보호만 필요한 곳에 쓰기 좋습니다.
+
+```
+userlist site_users
+  user admin  password $6$rounds=5000$saltsalt$해시값을_여기에_붙여넣으세요
+
+frontend web
+  bind :80
+  acl auth_ok http_auth(site_users)
+  http-request auth realm "Restricted Area" unless auth_ok
+  default_backend web_servers
+
+backend web_servers
+  balance roundrobin
+  server web1 10.0.0.11:8080 check
+```
+
+`userlist`에 계정을 정의하고, `http_auth(site_users)`로 "이 요청의 자격 증명이 목록과 맞는가"를 확인합니다. 맞지 않으면(`unless auth_ok`) `http-request auth`가 401을 돌려주고, 브라우저는 로그인 창을 띄웁니다.
+
+**비밀번호는 해시로 저장하세요.** 해시는 아래 명령으로 만듭니다.
+
+```bash
+openssl passwd -6 '실제비밀번호'
+```
+
+`-6`은 SHA-512를 뜻하며, 출력된 문자열을 `password` 뒤에 그대로 붙여 넣으면 됩니다. 시험용으로 평문을 쓰려면 `password` 대신 `insecure-password`를 씁니다. 이름 그대로 안전하지 않은 방식이라, 설정 파일을 읽을 수 있는 사람에게 비밀번호가 그대로 노출됩니다.
+
+특정 경로에만 인증을 걸 수도 있습니다.
+
+```
+userlist site_users
+  user admin  password $6$rounds=5000$saltsalt$해시값을_여기에_붙여넣으세요
+
+frontend web
+  bind :80
+  acl is_admin_path path_beg /admin
+  acl auth_ok       http_auth(site_users)
+  http-request auth realm "Admin Only" if is_admin_path !auth_ok
+  default_backend web_servers
+
+backend web_servers
+  balance roundrobin
+  server web1 10.0.0.11:8080 check
+```
+
+> ⚠️ Basic Auth는 자격 증명을 **매 요청마다 그대로 실어 보냅니다.** HTTP로 쓰면 네트워크에서 그대로 읽힙니다. 반드시 [HTTPS](#3-https-처리-ssl-종료)와 함께 쓰세요. 또한 계정이 설정 파일에 박히므로 사용자가 여러 명이거나 자주 바뀌는 서비스에는 맞지 않습니다. 그런 경우에는 애플리케이션 단의 인증이나 OAuth 프록시를 쓰세요.
+
+---
+
+### 12. 외부 프로그램으로 서버 상태 동적 제어
 
 앞의 10번은 **사람이** 관리 소켓에 명령을 넣는 방식이었습니다. 이걸 **프로그램이 알아서** 하게 만들 수 있습니다. HAProxy는 두 가지 길을 제공하는데, 성격이 꽤 다릅니다.
 
@@ -870,7 +996,7 @@ web2  status=DOWN  check=255
 
 서버는 멀쩡한데 **전부 DOWN**이 됩니다. 헬스체크가 고장 난 것이지 서버가 죽은 게 아닌데도 화면상으로는 구분이 안 되니, 원인을 찾기 어렵습니다. `chroot` 줄을 지우면 정상 동작합니다.
 
-#### agent-check — 서버가 스스로 트래픽을 조절
+#### 방법 1 — agent-check: 서버가 스스로 트래픽을 조절
 
 백엔드 서버마다 작은 에이전트를 띄워 두면, HAProxy가 주기적으로 접속해 한 줄을 읽고 그대로 따릅니다.
 
@@ -922,7 +1048,7 @@ down#DB 점검 중         (X) — 통째로 모르는 단어가 되어 무시�
 
 에이전트가 개입한 서버는 통계 화면에 `DRAIN (agent)`, `DOWN (agent)`처럼 `(agent)`가 붙어 구분됩니다. 그리고 이 포트를 잡으면 서버를 마음대로 빼고 넣을 수 있으니 **방화벽으로 HAProxy만 접근하도록 막으세요.**
 
-#### external-check — 스크립트를 직접 실행
+#### 방법 2 — external-check: 스크립트를 직접 실행
 
 TCP나 HTTP로 표현할 수 없는 조건(복제 지연, 라이선스 서버 상태 등)을 검사할 때만 쓰세요. 종료 코드 `0`이면 정상, 그 외는 장애로 보고 해당 서버를 제외합니다.
 
@@ -967,6 +1093,56 @@ exit 0
 `HAPROXY_SERVER_NAME`, `HAPROXY_SERVER_ADDR`, `HAPROXY_SERVER_PORT`, `HAPROXY_SERVER_CURCONN`, `HAPROXY_SERVER_MAXCONN` 등을 쓸 수 있습니다. 환경은 이 변수들만 남기고 비워지며 `PATH`조차 없으므로, 위처럼 `external-check path`를 지정하거나 명령을 절대 경로로 쓰세요.
 
 스크립트는 짧고 빨라야 합니다. 검사 주기마다 서버 수만큼 프로세스가 새로 뜨므로, 무거운 스크립트를 짧은 주기로 돌리면 그 자체가 부하가 됩니다. `insecure-fork-wanted`가 HAProxy의 프로세스 생성 차단 보호를 통째로 끈다는 점도 기억해 두세요.
+
+#### 방법 3 — Runtime API: 외부 시스템이 소켓으로 제외
+
+배포 스크립트나 모니터링 도구가 관리 소켓으로 명령을 보내는 방식입니다. 설정 변경도 재시작도 필요 없고 즉시 반영됩니다. **배포 파이프라인에 넣기 가장 쉬운 방법**입니다.
+
+```bash
+# 배포 전 — 트래픽 빼기 (기존 연결은 정상 종료될 때까지 유지)
+echo "set server web_servers/web1 state drain" | sudo socat stdio /run/haproxy/haproxy.sock
+
+# 배포 후 — 복귀
+echo "set server web_servers/web1 state ready" | sudo socat stdio /run/haproxy/haproxy.sock
+
+# 가중치만 낮춰 트래픽을 조금씩 옮기기 (카나리 배포)
+echo "set server web_servers/web1 weight 10" | sudo socat stdio /run/haproxy/haproxy.sock
+```
+
+#### 방법 4 — 맵 파일: 요청 단위로 동적 차단
+
+서버가 아니라 **요청**을 걸러 내는 경우입니다. 차단 목록을 파일로 두고 런타임에 갱신하면 리로드 없이 즉시 반영됩니다.
+
+```
+frontend web
+  bind :80
+  acl is_blocked src,map_ip(/etc/haproxy/blocked.map) -m found
+  http-request deny deny_status 403 if is_blocked
+  default_backend web_servers
+
+backend web_servers
+  balance roundrobin
+  server web1 10.0.0.11:8080 check
+  server web2 10.0.0.12:8080 check
+```
+
+빈 파일이라도 미리 만들어 두어야 기동됩니다.
+
+```bash
+sudo touch /etc/haproxy/blocked.map
+```
+
+이후 목록 갱신은 소켓으로 합니다.
+
+```bash
+echo "add map /etc/haproxy/blocked.map 1.2.3.4 blocked" | sudo socat stdio /run/haproxy/haproxy.sock
+echo "del map /etc/haproxy/blocked.map 1.2.3.4"         | sudo socat stdio /run/haproxy/haproxy.sock
+echo "show map /etc/haproxy/blocked.map"                | sudo socat stdio /run/haproxy/haproxy.sock
+```
+
+> 런타임 갱신은 **메모리에만** 반영됩니다. HAProxy를 재시작하면 사라지므로, 영구히 유지하려면 파일에도 함께 기록해 두세요.
+
+네 방법은 성격이 다릅니다. 서버가 스스로 판단하게 하려면 **agent-check**, HAProxy가 검사 프로그램을 돌리게 하려면 **external-check**, 배포 도구처럼 외부에서 통제하려면 **Runtime API**, 서버가 아니라 특정 접속자를 막으려면 **맵 파일**을 쓰면 됩니다.
 
 ---
 
@@ -1022,11 +1198,19 @@ VERSION=3.4.3         # 정확한 버전 (세 자리)
 
 예를 들어 3.4.5가 나왔다면 `VERSION=3.4.5`로만 바꾸면 되고, 3.6 계열로 옮겨 간다면 `MAINVERSION?=3.6`, `VERSION=3.6.0` 처럼 둘 다 바꿉니다.
 
+> **파일을 고치지 않고 한 번만 빌드하려면** 명령줄에서 바로 넘길 수도 있습니다. 저장소의 기본 버전은 그대로 두고 다른 버전을 시험해 볼 때 편합니다.
+>
+> ```bash
+> make run-docker VERSION=3.2.22 MAINVERSION=3.2
+> ```
+>
+> 이렇게 하면 여러 계열을 각각 빌드해 둘 수 있습니다. 다만 `RPMS/` 는 매번 덮어쓰이므로, 여러 버전을 모아 두려면 빌드가 끝날 때마다 다른 곳으로 옮겨 두세요.
+
 **3단계 — 다시 빌드하고 확인.**
 
 ```bash
 make run-docker
-ls -lh RPMS/
+ls -lh RPMS/el8/ RPMS/el9/
 ```
 
 **4단계 — 검증.** 운영에 올리기 전에 테스트 환경에서 설치해 보고, 버전과 기능이 의도대로 나오는지 확인하세요.
@@ -1101,6 +1285,8 @@ sudo semanage port -a -t http_port_t -p tcp 9000
 sudo dnf install -y ./haproxy-3.4.3-1.el9.x86_64.rpm
 ```
 
+그래도 의존성 오류가 난다면 **패키지 버전이 서버와 안 맞는 경우**입니다. RHEL 8 서버에 `el9` 패키지를 넣으면 OpenSSL 버전이 달라 설치가 거부됩니다. `cat /etc/redhat-release`로 서버 버전을 확인하고 맞는 파일을 쓰세요.
+
 ### 빌드 도중 다운로드에 실패해요
 
 빌드 과정에서 `haproxy.org`에 접속합니다. 폐쇄망이거나 프록시를 거쳐야 하는 환경이라면 빌드가 여기서 멈춥니다. 사내 프록시가 있다면 Docker 데몬과 컨테이너 양쪽에 프록시 설정이 필요합니다.
@@ -1126,4 +1312,17 @@ ls /usr/share/doc/haproxy/
 
 ## 라이선스
 
-HAProxy는 GPLv2+ 라이선스로 배포됩니다. 자세한 내용은 저장소의 `LICENSE` 파일을 참고하세요.
+라이선스가 **두 가지**로 나뉩니다. 헷갈리기 쉬우니 구분해서 보세요.
+
+| 대상 | 라이선스 |
+|---|---|
+| **이 저장소의 빌드 도구** (spec, Makefile, Dockerfile, 스크립트, 문서) | **GPL v3** — 저장소의 [`LICENSE`](LICENSE) 파일 |
+| **패키징되는 HAProxy 본체** | **GPLv2+** — RPM 의 `License` 필드에 선언된 값 |
+
+이 저장소는 [philyuchkoff/HAProxy-2-RPM-builder](https://github.com/philyuchkoff/HAProxy-2-RPM-builder) 에서 갈라져 나온 파생물이고, 원 저장소가 GPLv3 이므로 이 저장소도 **GPLv3 를 따릅니다.** 포크하거나 수정해서 배포하실 때도 GPLv3 조건이 그대로 적용됩니다.
+
+설치된 패키지의 라이선스는 다음 명령으로 확인할 수 있습니다.
+
+```bash
+rpm -qi haproxy | grep License        # GPLv2+ (HAProxy 본체)
+```

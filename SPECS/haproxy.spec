@@ -2,12 +2,10 @@
 %define haproxy_group   %{haproxy_user}
 %define haproxy_home    %{_localstatedir}/lib/haproxy
 
-%if 0%{?rhel} > 6 && 0%{!?amzn2}
-    %define dist %{expand:%%(/usr/lib/rpm/redhat/dist.sh --dist)}
-%endif
-
-%if 0%{?rhel} < 7
-    %{!?__global_ldflags: %global __global_ldflags -Wl,-z,relro}
+# This package targets RHEL 8 and 9 (and rebuilds such as Rocky/Alma) only.
+# Fail early and clearly rather than producing a subtly wrong package.
+%if !(0%{?el8} || 0%{?el9})
+%{error:haproxy: unsupported build target (dist=%{?dist}). RHEL 8 or 9 required.}
 %endif
 
 %global _hardened_build 1
@@ -21,20 +19,23 @@ Group: System Environment/Daemons
 URL: http://www.haproxy.org/
 Source0: http://www.haproxy.org/download/%{mainversion}/src/%{name}-%{version}.tar.gz
 Source1: %{name}.cfg
-%if 0%{?el6} || 0%{?amzn1}
-Source2: %{name}.init
-%else
 Source2: %{name}.service
-%endif
 Source3: %{name}.logrotate
 Source4: %{name}.syslog%{?dist}
 Source5: halog.1
 
-# Ready-to-use config recipes, one file per README example. They ship under
-# /usr/share/haproxy rather than as %%doc so `rpm --excludedocs` can't strip
-# them: they are templates users copy from, not reading material.
+# Ready-to-use config recipes. They ship under /usr/share/haproxy rather than
+# as %%doc so `rpm --excludedocs` can't strip them: they are templates users
+# copy from, not reading material.
+#
+# Two independently written sets live here. The "recipe" set is compact -- one
+# file per topic, meant to be read top to bottom. The "example" set is finer
+# grained and comes with a syntax checker. Both are kept; README.txt explains
+# which is which.
 Source10: README.txt
 Source11: check-example.sh
+
+# Fine-grained set (+ skeletons used only for syntax checking)
 Source20: 00-base.cfg
 Source21: 01-web-http-lb.cfg
 Source22: 02-real-client-ip.cfg
@@ -55,6 +56,20 @@ Source35: 15-external-check.cfg
 # shared 00-base.cfg deliberately does not enable.
 Source36: 15-external-check.global
 
+# Compact set
+Source50: recipe-01-web-http.cfg
+Source51: recipe-02-https.cfg
+Source52: recipe-03-routing.cfg
+Source53: recipe-04-sticky-session.cfg
+Source54: recipe-05-basic-auth.cfg
+Source55: recipe-06-mysql.cfg
+Source56: recipe-07-postgresql.cfg
+Source57: recipe-08-redis.cfg
+Source58: recipe-09-tcp.cfg
+Source59: recipe-10-rate-limit.cfg
+Source60: recipe-11-maintenance.cfg
+Source61: recipe-12-dynamic-exclusion.cfg
+
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
 
 # PCRE2, not PCRE1: HAProxy 3 recommends it and PCRE1 has been end-of-life
@@ -68,13 +83,7 @@ BuildRequires: openssl-devel
 Requires(pre):      shadow-utils
 Requires:           rsyslog
 
-%if 0%{?el6} || 0%{?amzn1}
-Requires(post):     chkconfig, initscripts
-Requires(preun):    chkconfig, initscripts
-Requires(postun):   initscripts
-%endif
 
-%if 0%{?el7} || 0%{?amzn2} || 0%{?el8} || 0%{?el9}
 # Only the rpm macros (%%{_unitdir}, %%systemd_post, ...) are needed. HAProxy 3
 # implements sd_notify itself, so it no longer links against libsystemd and
 # systemd-devel has nothing left to contribute.
@@ -82,7 +91,6 @@ BuildRequires:      systemd-rpm-macros
 Requires(post):     systemd
 Requires(preun):    systemd
 Requires(postun):   systemd
-%endif
 
 %description
 HA-Proxy is a TCP/HTTP reverse proxy which is particularly suited for high
@@ -100,9 +108,14 @@ It needs very little resource. Its event-driven architecture allows it to easily
 handle thousands of simultaneous connections on hundreds of instances without
 risking the system's stability.
 
+Ready-to-use configuration recipes are installed under
+%{_datadir}/%{name}/examples.
+
+https://github.com/DataDynamics/haproxy3-rpm-builder-internal
+
 # This spec started life in philyuchkoff's HAProxy-2-RPM-builder. That project
 # targets the 2.x series, which this package no longer builds, so the pointer
-# is kept here as attribution rather than in the user-visible description.
+# is kept as a comment rather than in the user-visible description.
 
 %prep
 %setup -q
@@ -183,20 +196,26 @@ popd
 %{__install} -c -m 644 %{SOURCE34} %{example_dir}/14-agent-check.cfg
 %{__install} -c -m 644 %{SOURCE35} %{example_dir}/15-external-check.cfg
 %{__install} -c -m 644 %{SOURCE36} %{example_dir}/15-external-check.global
+%{__install} -c -m 644 %{SOURCE50} %{example_dir}/recipe-01-web-http.cfg
+%{__install} -c -m 644 %{SOURCE51} %{example_dir}/recipe-02-https.cfg
+%{__install} -c -m 644 %{SOURCE52} %{example_dir}/recipe-03-routing.cfg
+%{__install} -c -m 644 %{SOURCE53} %{example_dir}/recipe-04-sticky-session.cfg
+%{__install} -c -m 644 %{SOURCE54} %{example_dir}/recipe-05-basic-auth.cfg
+%{__install} -c -m 644 %{SOURCE55} %{example_dir}/recipe-06-mysql.cfg
+%{__install} -c -m 644 %{SOURCE56} %{example_dir}/recipe-07-postgresql.cfg
+%{__install} -c -m 644 %{SOURCE57} %{example_dir}/recipe-08-redis.cfg
+%{__install} -c -m 644 %{SOURCE58} %{example_dir}/recipe-09-tcp.cfg
+%{__install} -c -m 644 %{SOURCE59} %{example_dir}/recipe-10-rate-limit.cfg
+%{__install} -c -m 644 %{SOURCE60} %{example_dir}/recipe-11-maintenance.cfg
+%{__install} -c -m 644 %{SOURCE61} %{example_dir}/recipe-12-dynamic-exclusion.cfg
 
 %{__install} -p -m 0755 ./admin/halog/halog %{buildroot}%{_bindir}/halog
 %{__install} -p -m 0755 ./admin/iprange/iprange %{buildroot}%{_bindir}/iprange
 %{__install} -p -D -m 0644 %{SOURCE5} %{buildroot}%{_mandir}/man1/halog.1
 
-%if 0%{?el6} || 0%{?amzn1}
-%{__install} -d %{buildroot}%{_sysconfdir}/rc.d/init.d
-%{__install} -c -m 755 %{SOURCE2} %{buildroot}%{_sysconfdir}/rc.d/init.d/%{name}
-%endif
 
-%if 0%{?el7} || 0%{?amzn2} || 0%{?el8} || 0%{?el9}
 %{__install} -s %{name} %{buildroot}%{_sbindir}/
 %{__install} -p -D -m 0644 %{SOURCE2} %{buildroot}%{_unitdir}/%{name}.service
-%endif
 
 %clean
 [ "%{buildroot}" != "/" ] && %{__rm} -rf %{buildroot}
@@ -210,47 +229,23 @@ getent passwd %{haproxy_user} >/dev/null || \
 exit 0
 
 %post
-%if 0%{?el7} || 0%{?amzn2} || 0%{?el8} || 0%{?el9}
 %systemd_post %{name}.service
 systemctl reload-or-try-restart rsyslog.service
-%endif
 
-%if 0%{?el6} || 0%{?amzn1}
-/sbin/chkconfig --add %{name}
-/sbin/service rsyslog restart >/dev/null 2>&1 || :
-%endif
 
 %preun
-%if 0%{?el7} || 0%{?amzn2} || 0%{?el8} || 0%{?el9}
 %systemd_preun %{name}.service
-%endif
 
-%if 0%{?el6} || 0%{?amzn1}
-if [ $1 = 0 ]; then
-  /sbin/service %{name} stop >/dev/null 2>&1 || :
-  /sbin/chkconfig --del %{name}
-fi
-%endif
 
 %postun
-%if 0%{?el7} || 0%{?amzn2} || 0%{?el8} || 0%{?el9}
 %systemd_postun_with_restart %{name}.service
 systemctl reload-or-try-restart rsyslog.service
-%endif
 
-%if 0%{?el6} || 0%{?amzn1}
-if [ "$1" -ge "1" ]; then
-  /sbin/service %{name} condrestart >/dev/null 2>&1 || :
-  /sbin/service rsyslog restart >/dev/null 2>&1 || :
-fi
-%endif
 
 %files
 %defattr(-,root,root)
 %doc CHANGELOG examples/*.cfg doc/configuration.txt doc/intro.txt doc/management.txt doc/proxy-protocol.txt
-%if 0%{?el7} || 0%{?amzn2} || 0%{?el8} || 0%{?el9}
     %license LICENSE
-%endif
 %doc %{_mandir}/man1/*
 %dir %{_sysconfdir}/%{name}
 %{_sysconfdir}/%{name}/errors
@@ -267,10 +262,5 @@ fi
 %{_bindir}/halog
 %{_bindir}/iprange
 
-%if 0%{?el6} || 0%{?amzn1}
-%attr(0755,root,root) %config %_sysconfdir/rc.d/init.d/%{name}
-%endif
 
-%if 0%{?el7} || 0%{?amzn2} || 0%{?el8} || 0%{?el9}
 %attr(-,root,root) %{_unitdir}/%{name}.service
-%endif

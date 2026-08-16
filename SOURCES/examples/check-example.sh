@@ -79,9 +79,13 @@ check_one() {
 
     echo "   검사 실패. 위 메시지를 확인하세요." >&2
     case "$(basename "$target")" in
-        03-*|04-*)
+        03-*|04-*|recipe-02-*)
             echo "   이 예제는 /etc/haproxy/certs/example.com.pem 인증서 파일이" >&2
             echo "   실제로 있어야 통과합니다. 만드는 방법은 예제 파일 주석 참고." >&2
+            ;;
+        recipe-12-*)
+            echo "   이 예제는 맵 파일이 미리 있어야 통과합니다. 빈 파일이면 됩니다." >&2
+            echo "     sudo touch /etc/haproxy/blocked.map" >&2
             ;;
     esac
     return 1
