@@ -36,8 +36,8 @@
 Docker만 설치되어 있으면 아래 세 줄로 끝납니다. 서버에 컴파일러를 깔 필요도 없습니다.
 
 ```bash
-git clone https://github.com/DataDynamics/haproxy3-rpm-builder-internal.git
-cd haproxy3-rpm-builder-internal
+git clone https://github.com/DataDynamics-OSS/haproxy3-rpm-builder.git
+cd haproxy3-rpm-builder
 make run-docker
 ```
 
@@ -140,8 +140,8 @@ docker --version
 그다음 저장소를 받아서 빌드합니다.
 
 ```bash
-git clone https://github.com/DataDynamics/haproxy3-rpm-builder-internal.git
-cd haproxy3-rpm-builder-internal
+git clone https://github.com/DataDynamics-OSS/haproxy3-rpm-builder.git
+cd haproxy3-rpm-builder
 make run-docker
 ```
 
@@ -196,8 +196,8 @@ sudo dnf install -y openssl-devel zlib-devel systemd-rpm-macros pcre2-devel \
 그다음 빌드합니다.
 
 ```bash
-git clone https://github.com/DataDynamics/haproxy3-rpm-builder-internal.git
-cd haproxy3-rpm-builder-internal
+git clone https://github.com/DataDynamics-OSS/haproxy3-rpm-builder.git
+cd haproxy3-rpm-builder
 make
 ```
 

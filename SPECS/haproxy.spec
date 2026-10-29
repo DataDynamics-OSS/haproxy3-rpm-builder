@@ -92,7 +92,7 @@ risking the system's stability.
 Ready-to-use configuration recipes are installed under
 %{_datadir}/%{name}/examples.
 
-https://github.com/DataDynamics/haproxy3-rpm-builder-internal
+https://github.com/DataDynamics-OSS/haproxy3-rpm-builder
 
 # This spec started life in philyuchkoff's HAProxy-2-RPM-builder. That project
 # targets the 2.x series, which this package no longer builds, so the pointer
