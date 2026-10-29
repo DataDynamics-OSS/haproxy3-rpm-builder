@@ -458,7 +458,7 @@ sudo haproxy -c -f /etc/haproxy/haproxy.cfg && sudo systemctl reload haproxy
 
 실무에서 자주 쓰는 설정을 용도별로 모았습니다. **필요한 것만 골라서** `/etc/haproxy/haproxy.cfg` 끝에 붙여 넣고, IP 주소와 포트만 환경에 맞게 바꾸면 됩니다.
 
-> 이 문서의 모든 예제는 HAProxy 3.4.3에서 문법 검사(`haproxy -c`)를 **경고 없이** 통과하는 것을 확인했습니다. 웹·라우팅·세션 고정·HTTPS·TCP·속도 제한·기본 인증·동적 제외 예제는 실제로 띄워 동작까지 검증했습니다.
+> 이 문서의 모든 예제는 HAProxy 3.4.7에서 문법 검사(`haproxy -c`)를 **경고 없이** 통과하는 것을 확인했습니다. 웹·라우팅·세션 고정·HTTPS·TCP·속도 제한·기본 인증·동적 제외 예제는 HAProxy 3.4.3에서 실제로 띄워 동작까지 검증했습니다.
 
 ### 예제는 파일로도 설치됩니다
 
