@@ -55,7 +55,7 @@ HAProxy는 유지보수 중인 브랜치에 위험이 낮은 기능을 **백포�
 
 ## HAProxy 3.4 — 최신 LTS
 
-> 2026-06-03 릴리스 · 2031년 2분기까지 지원 · [패키지 받기](https://github.com/DataDynamics/haproxy3-rpm-builder-internal/releases/tag/v3.4.3)
+> 2026-06-03 릴리스 · 2031년 2분기까지 지원 · [패키지 받기](https://github.com/DataDynamics/haproxy3-rpm-builder-internal/releases/tag/v3.4.7)
 
 운영 편의성이 가장 크게 개선된 릴리스입니다. **재시작 없이 백엔드를 통째로 추가·삭제**할 수 있게 된 것이 핵심이고, 관측(OpenTelemetry)과 암호화 관련 기능도 대폭 늘었습니다.
 
