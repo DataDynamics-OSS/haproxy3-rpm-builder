@@ -2,7 +2,7 @@
 
 이 저장소가 패키징하는 HAProxy 각 버전에 어떤 기능이 들어왔는지 정리한 문서입니다. 업그레이드를 검토하거나 새로 구축할 버전을 고를 때 참고하세요.
 
-패키지 내려받기는 [Releases](https://github.com/DataDynamics/haproxy3-rpm-builder-internal/releases) 에서 하시면 됩니다. 설치·설정 방법은 [README](README.md) 를 보세요.
+패키지 내려받기는 [Releases](https://github.com/DataDynamics-OSS/haproxy3-rpm-builder/releases) 에서 하시면 됩니다. 설치·설정 방법은 [README](README.md) 를 보세요.
 
 ---
 
@@ -55,7 +55,7 @@ HAProxy는 유지보수 중인 브랜치에 위험이 낮은 기능을 **백포�
 
 ## HAProxy 3.4 — 최신 LTS
 
-> 2026-06-03 릴리스 · 2031년 2분기까지 지원 · [패키지 받기](https://github.com/DataDynamics/haproxy3-rpm-builder-internal/releases/tag/v3.4.7)
+> 2026-06-03 릴리스 · 2031년 2분기까지 지원 · [패키지 받기](https://github.com/DataDynamics-OSS/haproxy3-rpm-builder/releases/tag/v3.4.7)
 
 운영 편의성이 가장 크게 개선된 릴리스입니다. **재시작 없이 백엔드를 통째로 추가·삭제**할 수 있게 된 것이 핵심이고, 관측(OpenTelemetry)과 암호화 관련 기능도 대폭 늘었습니다.
 
@@ -88,7 +88,7 @@ HAProxy는 유지보수 중인 브랜치에 위험이 낮은 기능을 **백포�
 
 ## HAProxy 3.3
 
-> 2025-11-26 릴리스 · 2027년 1분기까지 지원 · [패키지 받기](https://github.com/DataDynamics/haproxy3-rpm-builder-internal/releases/tag/v3.3.13)
+> 2025-11-26 릴리스 · 2027년 1분기까지 지원 · [패키지 받기](https://github.com/DataDynamics-OSS/haproxy3-rpm-builder/releases/tag/v3.3.13)
 
 암호화 성능과 통계 유지에 초점이 맞춰진 릴리스입니다. **기본 부하분산 알고리즘이 바뀐 버전**이므로 [업그레이드 전에 알아 둘 것](#업그레이드-전에-알아-둘-것)을 꼭 확인하세요.
 
@@ -118,7 +118,7 @@ TLS 핸드셰이크 이후의 대칭키 암복호화를 **리눅스 커널에 �
 
 ## HAProxy 3.2 — LTS
 
-> 2025-05-28 릴리스 · 2030년 2분기까지 지원 · [패키지 받기](https://github.com/DataDynamics/haproxy3-rpm-builder-internal/releases/tag/v3.2.22)
+> 2025-05-28 릴리스 · 2030년 2분기까지 지원 · [패키지 받기](https://github.com/DataDynamics-OSS/haproxy3-rpm-builder/releases/tag/v3.2.22)
 
 **인증서 자동 발급(ACME)이 처음 들어온 버전**이자, 부하분산 알고리즘 성능이 크게 좋아진 릴리스입니다.
 
@@ -149,7 +149,7 @@ Let's Encrypt나 ZeroSSL에서 인증서를 **HAProxy가 직접 발급받고 갱
 
 ## HAProxy 3.1 — ⚠️ 지원 종료
 
-> 2024-11-26 릴리스 · **지원 종료 (마지막 릴리스 2026-03-19)** · [패키지 받기](https://github.com/DataDynamics/haproxy3-rpm-builder-internal/releases/tag/v3.1.17)
+> 2024-11-26 릴리스 · **지원 종료 (마지막 릴리스 2026-03-19)** · [패키지 받기](https://github.com/DataDynamics-OSS/haproxy3-rpm-builder/releases/tag/v3.1.17)
 
 > ⚠️ **이 브랜치는 더 이상 보안 수정이 제공되지 않습니다.** 신규 구축에 사용하지 마시고, 운영 중이라면 3.2 이상으로 옮기세요. 아래 기능은 모두 3.2 이후 버전에도 들어 있습니다.
 
@@ -176,7 +176,7 @@ Let's Encrypt나 ZeroSSL에서 인증서를 **HAProxy가 직접 발급받고 갱
 
 ## HAProxy 3.0 — LTS
 
-> 2024-05-29 릴리스 · 2029년 2분기까지 지원 · [패키지 받기](https://github.com/DataDynamics/haproxy3-rpm-builder-internal/releases/tag/v3.0.26)
+> 2024-05-29 릴리스 · 2029년 2분기까지 지원 · [패키지 받기](https://github.com/DataDynamics-OSS/haproxy3-rpm-builder/releases/tag/v3.0.26)
 
 3.x 계열의 시작점입니다. **인증서 관리 방식이 정리되고**, 리로드해도 통계가 유지되는 기반이 마련됐습니다.
 
