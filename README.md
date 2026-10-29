@@ -1,6 +1,6 @@
 # HAProxy 3 RPM 빌더
 
-이 저장소는 **HAProxy 3.4.3**을 **RHEL 8 / RHEL 9**(및 Rocky Linux, AlmaLinux 같은 호환 배포판)에 바로 설치할 수 있는 **RPM 패키지로 만들어 주는 도구**입니다. 두 버전용 패키지를 한 번에 만들어 줍니다.
+이 저장소는 **HAProxy 3.4.7**을 **RHEL 8 / RHEL 9**(및 Rocky Linux, AlmaLinux 같은 호환 배포판)에 바로 설치할 수 있는 **RPM 패키지로 만들어 주는 도구**입니다. 두 버전용 패키지를 한 번에 만들어 줍니다.
 
 리눅스 배포판이 기본으로 제공하는 HAProxy는 안정성을 위해 보통 몇 년 전 버전에 머물러 있어서, ACME 자동 인증서 발급 같은 3.x 신규 기능을 쓸 수 없습니다. 최신 기능이 필요하다면 직접 소스를 받아 컴파일해야 하지만, 그렇게 설치하면 나중에 삭제나 업그레이드가 지저분해집니다.
 
@@ -52,7 +52,7 @@ RPMS/
 대상 서버의 버전에 맞는 것을 옮겨서 설치하면 됩니다.
 
 ```bash
-sudo dnf install -y ./RPMS/el9/haproxy-3.4.3-1.el9.x86_64.rpm
+sudo dnf install -y ./RPMS/el9/haproxy-3.4.7-1.el9.x86_64.rpm
 sudo systemctl enable --now haproxy
 ```
 
@@ -66,8 +66,8 @@ sudo systemctl enable --now haproxy
 
 | 파일 | 크기 | 설명 |
 |---|---|---|
-| `haproxy-3.4.3-1.el9.x86_64.rpm` | 약 2.4 MB | **실제로 설치할 패키지.** HAProxy 본체와 설정 파일이 들어 있습니다. |
-| `haproxy-3.4.3-1.el9.src.rpm` | 약 5.3 MB | 소스 RPM. 다른 곳에서 이 패키지를 그대로 재현해 빌드할 때 씁니다. |
+| `haproxy-3.4.7-1.el9.x86_64.rpm` | 약 2.4 MB | **실제로 설치할 패키지.** HAProxy 본체와 설정 파일이 들어 있습니다. |
+| `haproxy-3.4.7-1.el9.src.rpm` | 약 5.3 MB | 소스 RPM. 다른 곳에서 이 패키지를 그대로 재현해 빌드할 때 씁니다. |
 | `haproxy-debuginfo-…rpm` | 약 48 KB | 디버깅 심볼. 장애 분석으로 코어 덤프를 뜯어볼 때만 필요합니다. |
 | `haproxy-debugsource-…rpm` | 약 43 KB | 디버깅용 소스. 위와 같은 용도입니다. |
 
@@ -218,7 +218,7 @@ ls -lh rpmbuild/RPMS/x86_64/
 | 옵션 | 기본값 | 설명 |
 |---|---|---|
 | `MAINVERSION` | `3.4` | HAProxy 계열 버전. 다운로드 경로를 결정합니다. |
-| `VERSION` | `3.4.3` | 정확한 HAProxy 버전 |
+| `VERSION` | `3.4.7` | 정확한 HAProxy 버전 |
 | `RELEASE` | `1` | 패키지 릴리스 번호. 같은 HAProxy 버전으로 패키지를 다시 만들 때 올립니다. |
 | `EL_VERSIONS` | `8 9` | 어느 OS 버전용으로 빌드할지 (Docker 방식 전용) |
 | `BASE_IMAGE_8` | `rockylinux:8` | RHEL 8 빌드에 쓸 컨테이너 이미지 |
@@ -265,7 +265,7 @@ make run-docker USE_LUA=1 USE_PROMETHEUS=1
 
 ```bash
 cat /etc/redhat-release                                   # 서버가 8인지 9인지 확인
-sudo dnf install -y ./haproxy-3.4.3-1.el9.x86_64.rpm      # el9 서버라면
+sudo dnf install -y ./haproxy-3.4.7-1.el9.x86_64.rpm      # el9 서버라면
 ```
 
 `dnf`는 필요한 라이브러리(OpenSSL, zlib, PCRE2, rsyslog)를 알아서 함께 설치해 줍니다. 설치가 잘 됐는지 버전을 확인해 봅니다.
@@ -1178,10 +1178,10 @@ halog -srv < /var/log/haproxy/access.log
 
 ```makefile
 MAINVERSION?=3.4      # 계열 버전 (앞 두 자리)
-VERSION=3.4.3         # 정확한 버전 (세 자리)
+VERSION=3.4.7         # 정확한 버전 (세 자리)
 ```
 
-예를 들어 3.4.5가 나왔다면 `VERSION=3.4.5`로만 바꾸면 되고, 3.6 계열로 옮겨 간다면 `MAINVERSION?=3.6`, `VERSION=3.6.0` 처럼 둘 다 바꿉니다.
+예를 들어 3.4.8이 나왔다면 `VERSION=3.4.8`로만 바꾸면 되고, 3.6 계열로 옮겨 간다면 `MAINVERSION?=3.6`, `VERSION=3.6.0` 처럼 둘 다 바꿉니다.
 
 > **파일을 고치지 않고 한 번만 빌드하려면** 명령줄에서 바로 넘길 수도 있습니다. 저장소의 기본 버전은 그대로 두고 다른 버전을 시험해 볼 때 편합니다.
 >
@@ -1267,7 +1267,7 @@ sudo semanage port -a -t http_port_t -p tcp 9000
 `rpm -i` 대신 `dnf install`을 쓰세요. `rpm` 명령은 필요한 라이브러리를 자동으로 설치해 주지 않습니다.
 
 ```bash
-sudo dnf install -y ./haproxy-3.4.3-1.el9.x86_64.rpm
+sudo dnf install -y ./haproxy-3.4.7-1.el9.x86_64.rpm
 ```
 
 그래도 의존성 오류가 난다면 **패키지 버전이 서버와 안 맞는 경우**입니다. RHEL 8 서버에 `el9` 패키지를 넣으면 OpenSSL 버전이 달라 설치가 거부됩니다. `cat /etc/redhat-release`로 서버 버전을 확인하고 맞는 파일을 쓰세요.

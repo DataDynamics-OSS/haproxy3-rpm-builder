@@ -105,7 +105,7 @@ https://github.com/DataDynamics/haproxy3-rpm-builder-internal
 %define __perl_requires /bin/true
 
 %build
-# This package is built by `make ... USE_PROMETHEUS=0 VERSION=3.4.3 ...`, and
+# This package is built by `make ... USE_PROMETHEUS=0 VERSION=3.4.7 ...`, and
 # GNU make exports every command-line variable into the environment of the
 # commands it runs -- MAKEFLAGS carries them too, but the plain variables are
 # there as well, so clearing MAKEFLAGS alone would not be enough. HAProxy's
